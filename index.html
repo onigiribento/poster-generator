@@ -6,310 +6,64 @@
 <title>🎨 イベントポスタージェネレーター</title>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: #0f0f1a;
-    color: #fff;
-    min-height: 100vh;
-  }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans JP',sans-serif; background:#0f0f1a; color:#fff; min-height:100vh; }
 
-  .app-header {
-    padding: 24px 32px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  .app-header h1 {
-    font-family: 'Dela Gothic One', cursive;
-    font-size: 22px;
-    background: linear-gradient(90deg, #ff6b9d, #ffd93d, #6bcbff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+.app-header { padding:24px 32px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.1); }
+.app-header h1 { font-family:'Dela Gothic One',cursive; font-size:22px; background:linear-gradient(90deg,#ff6b9d,#ffd93d,#6bcbff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
-  .main-layout {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 0;
-    height: calc(100vh - 73px);
-  }
+.main-layout { display:grid; grid-template-columns:380px 1fr; height:calc(100vh - 73px); }
 
-  /* ===== LEFT PANEL ===== */
-  .left-panel {
-    background: #16162a;
-    border-right: 1px solid rgba(255,255,255,0.08);
-    overflow-y: auto;
-    padding: 24px;
-  }
+.left-panel { background:#16162a; border-right:1px solid rgba(255,255,255,0.08); overflow-y:auto; padding:24px; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:0.15em; color:#888; text-transform:uppercase; margin-bottom:12px; margin-top:24px; }
+.section-title:first-child { margin-top:0; }
+label { display:block; font-size:13px; color:#ccc; margin-bottom:6px; margin-top:14px; }
+input[type="text"], textarea, select { width:100%; background:#0f0f1a; border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:#fff; font-family:'Noto Sans JP',sans-serif; font-size:13px; padding:10px 12px; outline:none; transition:border-color 0.2s; }
+input[type="text"]:focus, textarea:focus, select:focus { border-color:#ff6b9d; }
+textarea { resize:vertical; min-height:70px; }
+select option { background:#16162a; }
 
-  .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    color: #888;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    margin-top: 24px;
-  }
-  .section-title:first-child { margin-top: 0; }
+.color-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.color-chip { width:32px; height:32px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform 0.15s, border-color 0.15s; }
+.color-chip:hover { transform:scale(1.15); }
+.color-chip.active { border-color:#fff; transform:scale(1.15); }
 
-  label {
-    display: block;
-    font-size: 13px;
-    color: #ccc;
-    margin-bottom: 6px;
-    margin-top: 14px;
-  }
+.generate-btn { width:100%; margin-top:28px; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,#ff6b9d,#ffd93d); color:#0f0f1a; font-family:'Dela Gothic One',cursive; font-size:16px; cursor:pointer; transition:opacity 0.2s, transform 0.1s; }
+.generate-btn:hover { opacity:0.9; transform:translateY(-1px); }
+.generate-btn:disabled { opacity:0.5; cursor:not-allowed; }
 
-  input[type="text"], textarea, select {
-    width: 100%;
-    background: #0f0f1a;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 13px;
-    padding: 10px 12px;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-  input[type="text"]:focus, textarea:focus, select:focus {
-    border-color: #ff6b9d;
-  }
-  textarea { resize: vertical; min-height: 70px; }
+.right-panel { display:flex; flex-direction:column; align-items:center; padding:32px; overflow-y:auto; gap:20px; }
+.preview-label { font-size:11px; letter-spacing:0.1em; color:#666; text-transform:uppercase; align-self:flex-start; }
+.poster-wrapper { width:100%; max-width:840px; position:relative; border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+#poster-canvas { transform-origin:top left; }
 
-  .color-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-  .color-chip {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.15s, border-color 0.15s;
-  }
-  .color-chip:hover { transform: scale(1.15); }
-  .color-chip.active { border-color: #fff; transform: scale(1.15); }
+.placeholder-msg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444; gap:12px; font-size:14px; }
+.placeholder-msg .icon { font-size:40px; }
 
-  .generate-btn {
-    width: 100%;
-    margin-top: 28px;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ff6b9d, #ffd93d);
-    color: #0f0f1a;
-    font-family: 'Dela Gothic One', cursive;
-    font-size: 16px;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-  }
-  .generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-  .generate-btn:active { transform: translateY(0); }
-  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.bottom-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.download-btn { padding:12px 28px; border:none; border-radius:10px; background:#fff; color:#0f0f1a; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:background 0.2s; }
+.download-btn:hover { background:#ffd93d; }
+.download-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.download-btn-video { padding:12px 28px; border:2px solid #ff6b9d; border-radius:10px; background:transparent; color:#ff6b9d; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:background 0.2s, color 0.2s; }
+.download-btn-video:hover { background:#ff6b9d; color:#fff; }
+.download-btn-video:disabled { opacity:0.4; cursor:not-allowed; }
 
-  .loading-text {
-    text-align: center;
-    font-size: 13px;
-    color: #ffd93d;
-    margin-top: 10px;
-    min-height: 20px;
-    display: none;
-  }
-  .loading-text.visible { display: block; }
+/* ANIMATIONS */
+@keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+@keyframes floatA { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-22px) scale(1.04)} 66%{transform:translate(-12px,14px) scale(0.97)} }
+@keyframes floatB { 0%,100%{transform:translate(0,0)} 40%{transform:translate(-20px,18px)} 75%{transform:translate(14px,-10px)} }
+@keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(10px,16px)} }
+@keyframes fadeSlideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
-  /* ===== RIGHT PANEL ===== */
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 32px;
-    overflow-y: auto;
-    gap: 20px;
-  }
-
-  .preview-label {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    color: #666;
-    text-transform: uppercase;
-    align-self: flex-start;
-  }
-
-  .poster-wrapper {
-    width: 100%;
-    max-width: 840px;
-    aspect-ratio: 1200/630;
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-
-  #poster-canvas {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  /* ===== POSTER STYLES ===== */
-  .poster {
-    width: 1200px;
-    height: 630px;
-    position: relative;
-    overflow: hidden;
-    transform-origin: top left;
-  }
-
-  .poster-bg {
-    position: absolute; inset: 0;
-  }
-
-  .poster-content {
-    position: absolute; inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px 80px;
-    z-index: 10;
-  }
-
-  /* STYLE: POP */
-  .style-pop .poster-bg {
-    background: linear-gradient(135deg, #ff6b9d 0%, #ffd93d 50%, #6bcbff 100%);
-  }
-  .style-pop .deco-circle {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.25;
-  }
-  .style-pop .tag-badge {
-    display: inline-block;
-    background: #0f0f1a;
-    color: #ffd93d;
-    font-family: 'Dela Gothic One', cursive;
-    font-size: 13px;
-    padding: 4px 14px;
-    border-radius: 999px;
-    margin-bottom: 18px;
-    width: fit-content;
-  }
-  .style-pop .event-title {
-    font-family: 'Dela Gothic One', cursive;
-    font-size: 68px;
-    line-height: 1.05;
-    color: #0f0f1a;
-    text-shadow: 4px 4px 0 rgba(255,255,255,0.4);
-    margin-bottom: 16px;
-  }
-  .style-pop .event-subtitle {
-    font-family: 'Zen Maru Gothic', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: #0f0f1a;
-    opacity: 0.75;
-    margin-bottom: 28px;
-  }
-  .style-pop .event-meta {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .style-pop .meta-item {
-    background: rgba(255,255,255,0.55);
-    backdrop-filter: blur(8px);
-    border-radius: 12px;
-    padding: 10px 18px;
-  }
-  .style-pop .meta-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #555;
-    text-transform: uppercase;
-  }
-  .style-pop .meta-value {
-    font-family: 'Zen Maru Gothic', sans-serif;
-    font-size: 16px;
-    font-weight: 900;
-    color: #0f0f1a;
-  }
-  .style-pop .slogan {
-    position: absolute;
-    right: 60px;
-    top: 50%;
-    transform: translateY(-50%) rotate(90deg);
-    transform-origin: center;
-    font-family: 'Dela Gothic One', cursive;
-    font-size: 14px;
-    letter-spacing: 0.2em;
-    color: rgba(15,15,26,0.4);
-    white-space: nowrap;
-  }
-  .style-pop .right-deco {
-    position: absolute;
-    right: -40px;
-    top: -40px;
-    width: 300px;
-    height: 300px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-  }
-  .style-pop .right-deco2 {
-    position: absolute;
-    right: 80px;
-    bottom: -80px;
-    width: 250px;
-    height: 250px;
-    background: rgba(15,15,26,0.12);
-    border-radius: 50%;
-  }
-
-  /* download btn */
-  .download-btn {
-    padding: 12px 28px;
-    border: none;
-    border-radius: 10px;
-    background: #fff;
-    color: #0f0f1a;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.2s;
-    align-self: center;
-  }
-  .download-btn:hover { background: #ffd93d; }
-  .download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .placeholder-msg {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #444;
-    gap: 12px;
-    font-size: 14px;
-  }
-  .placeholder-msg .icon { font-size: 40px; }
-
-  .bottom-actions {
-    display: flex;
-    gap: 12px;
-    align-self: stretch;
-    justify-content: center;
-  }
-
-  select option { background: #16162a; }
+.anim-bg { background-size:300% 300% !important; animation:gradShift 8s ease infinite; }
+.anim-circle-a { animation:floatA 7s ease-in-out infinite; }
+.anim-circle-b { animation:floatB 9s ease-in-out infinite; }
+.anim-circle-c { animation:floatC 5s ease-in-out infinite; }
+.anim-badge    { animation:fadeIn 0.6s ease both; animation-delay:0.1s; opacity:0; }
+.anim-title    { animation:fadeSlideUp 0.7s ease both; animation-delay:0.3s; opacity:0; }
+.anim-subtitle { animation:fadeSlideUp 0.7s ease both; animation-delay:0.55s; opacity:0; }
+.anim-meta     { animation:fadeSlideUp 0.7s ease both; animation-delay:0.8s; opacity:0; }
 </style>
 </head>
 <body>
@@ -320,281 +74,355 @@
 </header>
 
 <div class="main-layout">
-  <!-- LEFT: INPUT -->
   <div class="left-panel">
     <div class="section-title">📝 イベント情報</div>
-
     <label>イベント名 *</label>
     <input type="text" id="inp-title" placeholder="例: デザファク夏祭り2026" />
-
     <label>サブタイトル・キャッチ</label>
     <input type="text" id="inp-subtitle" placeholder="例: AIとデザインが出会う夜" />
-
     <label>日時</label>
     <input type="text" id="inp-date" placeholder="例: 2026年7月15日（水）19:00〜" />
-
     <label>場所</label>
     <input type="text" id="inp-place" placeholder="例: CyberAgent渋谷オフィス" />
-
     <label>スローガン・補足テキスト</label>
     <textarea id="inp-slogan" placeholder="例: CREATE THE FUTURE"></textarea>
-
     <label>主催・ロゴテキスト</label>
     <input type="text" id="inp-organizer" placeholder="例: デザファク × AI推進チーム" />
 
     <div class="section-title">🎨 デザイン設定</div>
-
     <label>カラーテーマ</label>
     <div class="color-row" id="color-picker">
-      <div class="color-chip active" data-theme="pop" style="background: linear-gradient(135deg,#ff6b9d,#ffd93d)" title="ポップ"></div>
-      <div class="color-chip" data-theme="ocean" style="background: linear-gradient(135deg,#0099ff,#00e5c5)" title="オーシャン"></div>
-      <div class="color-chip" data-theme="sunset" style="background: linear-gradient(135deg,#ff4e00,#ffcc00)" title="サンセット"></div>
-      <div class="color-chip" data-theme="night" style="background: linear-gradient(135deg,#7b2fff,#ff6bff)" title="ナイト"></div>
-      <div class="color-chip" data-theme="forest" style="background: linear-gradient(135deg,#00c853,#aaff00)" title="フォレスト"></div>
+      <div class="color-chip active" data-theme="pop"    style="background:linear-gradient(135deg,#ff6b9d,#ffd93d)" title="ポップ"></div>
+      <div class="color-chip"        data-theme="ocean"  style="background:linear-gradient(135deg,#0099ff,#00e5c5)" title="オーシャン"></div>
+      <div class="color-chip"        data-theme="sunset" style="background:linear-gradient(135deg,#ff4e00,#ffcc00)" title="サンセット"></div>
+      <div class="color-chip"        data-theme="night"  style="background:linear-gradient(135deg,#7b2fff,#ff6bff)" title="ナイト"></div>
+      <div class="color-chip"        data-theme="forest" style="background:linear-gradient(135deg,#00c853,#aaff00)" title="フォレスト"></div>
     </div>
-
     <label style="margin-top:16px">レイアウト</label>
     <select id="inp-layout">
       <option value="left">左寄せ（標準）</option>
       <option value="center">中央揃え</option>
-      <option value="split">左右分割</option>
     </select>
-
-    <button class="generate-btn" id="gen-btn" onclick="generatePoster()">✨ ポスターを生成する</button>
-    <div class="loading-text" id="loading-text">🤖 AIがデザインを生成中...</div>
+    <button class="generate-btn" onclick="generatePoster()">✨ ポスターを生成する</button>
   </div>
 
-  <!-- RIGHT: PREVIEW -->
   <div class="right-panel">
     <div class="preview-label">プレビュー（1200 × 630px）</div>
-
-    <div class="poster-wrapper">
-      <div id="poster-canvas" style="transform-origin:top left;">
+    <div class="poster-wrapper" id="poster-wrapper">
+      <div id="poster-canvas">
         <div class="placeholder-msg" id="placeholder">
           <span class="icon">🖼️</span>
           <span>左のフォームに情報を入力して<br>「ポスターを生成する」を押してください</span>
         </div>
       </div>
     </div>
-
     <div class="bottom-actions">
-      <button class="download-btn" id="dl-btn" disabled onclick="downloadPoster()">⬇️ 画像をダウンロード（PNG）</button>
+      <button class="download-btn"       id="dl-btn"       disabled onclick="downloadPoster()">⬇️ 画像をダウンロード（PNG）</button>
+      <button class="download-btn-video" id="dl-video-btn" disabled onclick="downloadVideo()">🎬 動画をダウンロード（WebM）</button>
     </div>
   </div>
 </div>
 
 <script>
-const THEMES = {
-  pop:    { bg: 'linear-gradient(135deg, #ff6b9d 0%, #ffd93d 55%, #6bcbff 100%)', accent: '#ffd93d', dark: '#0f0f1a' },
-  ocean:  { bg: 'linear-gradient(135deg, #0099ff 0%, #00e5c5 100%)', accent: '#00e5c5', dark: '#001a33' },
-  sunset: { bg: 'linear-gradient(135deg, #ff4e00 0%, #ffcc00 100%)', accent: '#ffcc00', dark: '#1a0a00' },
-  night:  { bg: 'linear-gradient(135deg, #7b2fff 0%, #ff6bff 100%)', accent: '#ff6bff', dark: '#0d001a' },
-  forest: { bg: 'linear-gradient(135deg, #00c853 0%, #aaff00 100%)', accent: '#aaff00', dark: '#001a0a' },
+var THEMES = {
+  pop:    { accent:'#ffd93d', dark:'#0f0f1a' },
+  ocean:  { accent:'#00e5c5', dark:'#001a33' },
+  sunset: { accent:'#ffcc00', dark:'#1a0a00' },
+  night:  { accent:'#ff6bff', dark:'#0d001a' },
+  forest: { accent:'#aaff00', dark:'#001a0a' }
+};
+var GRADIENTS = {
+  pop:    ['#ff6b9d','#ffd93d','#6bcbff'],
+  ocean:  ['#0099ff','#00c8e5','#00e5c5'],
+  sunset: ['#ff4e00','#ff9900','#ffcc00'],
+  night:  ['#7b2fff','#cc44ff','#ff6bff'],
+  forest: ['#00c853','#66dd00','#aaff00']
 };
 
-let currentTheme = 'pop';
+var currentTheme = 'pop';
+var currentPosterData = null;
 
-// Color chip selection
-document.getElementById('color-picker').addEventListener('click', e => {
-  const chip = e.target.closest('.color-chip');
+document.getElementById('color-picker').addEventListener('click', function(e) {
+  var chip = e.target.closest('.color-chip');
   if (!chip) return;
-  document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.color-chip').forEach(function(c){ c.classList.remove('active'); });
   chip.classList.add('active');
   currentTheme = chip.dataset.theme;
 });
 
 function scaleCanvas() {
-  const wrapper = document.querySelector('.poster-wrapper');
-  const canvas = document.getElementById('poster-canvas');
-  const scale = wrapper.clientWidth / 1200;
-  canvas.style.transform = `scale(${scale})`;
-  canvas.style.width = '1200px';
+  var wrapper = document.getElementById('poster-wrapper');
+  var canvas  = document.getElementById('poster-canvas');
+  var scale = wrapper.clientWidth / 1200;
+  canvas.style.transform = 'scale(' + scale + ')';
+  canvas.style.width  = '1200px';
   canvas.style.height = '630px';
   wrapper.style.height = (630 * scale) + 'px';
 }
 window.addEventListener('resize', scaleCanvas);
 
 function generatePoster() {
-  const title = document.getElementById('inp-title').value.trim();
+  var title     = document.getElementById('inp-title').value.trim();
   if (!title) { alert('イベント名を入力してください'); return; }
+  var subtitle  = document.getElementById('inp-subtitle').value.trim();
+  var date      = document.getElementById('inp-date').value.trim();
+  var place     = document.getElementById('inp-place').value.trim();
+  var slogan    = document.getElementById('inp-slogan').value.trim();
+  var organizer = document.getElementById('inp-organizer').value.trim();
+  var layout    = document.getElementById('inp-layout').value;
+  var theme     = THEMES[currentTheme];
+  var grads     = GRADIENTS[currentTheme];
+  var titleSize = title.length > 10 ? 54 : 68;
+  var contentAlign = layout === 'center' ? 'align-items:center;text-align:center;' : '';
 
-  const subtitle  = document.getElementById('inp-subtitle').value.trim();
-  const date      = document.getElementById('inp-date').value.trim();
-  const place     = document.getElementById('inp-place').value.trim();
-  const slogan    = document.getElementById('inp-slogan').value.trim();
-  const organizer = document.getElementById('inp-organizer').value.trim();
-  const layout    = document.getElementById('inp-layout').value;
-  const theme     = THEMES[currentTheme];
+  var metaHTML = '';
+  if (date)  metaHTML += '<div class="meta-pill"><div class="meta-label">DATE</div><div class="meta-val" style="color:' + theme.dark + ';">' + date  + '</div></div>';
+  if (place) metaHTML += '<div class="meta-pill"><div class="meta-label">PLACE</div><div class="meta-val" style="color:' + theme.dark + ';">' + place + '</div></div>';
 
-  const canvas = document.getElementById('poster-canvas');
-  const placeholder = document.getElementById('placeholder');
-  if (placeholder) placeholder.remove();
+  var sloganHTML = slogan
+    ? '<div style="position:absolute;right:52px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:13px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.25);white-space:nowrap;">' + slogan + '</div>'
+    : '';
+  var orgHTML = organizer
+    ? '<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:rgba(0,0,0,0.45);letter-spacing:0.08em;">' + organizer + '</div>'
+    : '';
+  var subHTML = subtitle
+    ? '<div class="anim-subtitle" style="font-size:20px;font-weight:700;color:' + theme.dark + ';opacity:0.72;margin-bottom:28px;">' + subtitle + '</div>'
+    : '';
 
-  // META items
-  const metaItems = [];
-  if (date)  metaItems.push({ label: 'DATE', value: date });
-  if (place) metaItems.push({ label: 'PLACE', value: place });
+  var bgStyle = 'background:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ');';
 
-  const metaHTML = metaItems.map(m => `
-    <div class="meta-item">
-      <div class="meta-label">${m.label}</div>
-      <div class="meta-value">${m.value}</div>
-    </div>
-  `).join('');
+  var html = ''
+    + '<style>'
+    + '.meta-pill{background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;}'
+    + '.meta-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;}'
+    + '.meta-val{font-size:15px;font-weight:900;}'
+    + '</style>'
+    + '<div class="anim-bg" style="width:1200px;height:630px;position:relative;overflow:hidden;' + bgStyle + '">'
+    +   '<div class="anim-circle-a" style="position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,0.18);top:-100px;right:-60px;"></div>'
+    +   '<div class="anim-circle-b" style="position:absolute;width:250px;height:250px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-80px;right:120px;"></div>'
+    +   '<div class="anim-circle-c" style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.30);top:60px;right:280px;"></div>'
+    +   sloganHTML
+    +   orgHTML
+    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;z-index:10;' + contentAlign + '">'
+    +     '<div class="anim-badge" style="display:inline-block;background:' + theme.dark + ';color:' + theme.accent + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>'
+    +     '<div class="anim-title" style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + theme.dark + ';text-shadow:3px 3px 0 rgba(255,255,255,0.3);margin-bottom:14px;">' + title + '</div>'
+    +     subHTML
+    +     '<div class="anim-meta" style="display:flex;flex-wrap:wrap;">' + metaHTML + '</div>'
+    +   '</div>'
+    + '</div>';
 
-  const contentAlign = layout === 'center' ? 'align-items:center;text-align:center;' : '';
+  var canvas = document.getElementById('poster-canvas');
+  var ph = document.getElementById('placeholder');
+  if (ph) ph.remove();
+  canvas.innerHTML = html;
 
-  canvas.innerHTML = `
-    <div class="poster style-pop" style="width:1200px;height:630px;">
-      <div class="poster-bg" style="background:${theme.bg};"></div>
-      <!-- Deco circles -->
-      <div style="position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,0.18);top:-100px;right:-60px;"></div>
-      <div style="position:absolute;width:250px;height:250px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-80px;right:120px;"></div>
-      <div style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.3);top:60px;right:280px;"></div>
-      <!-- Slogan vertical -->
-      ${slogan ? `<div style="position:absolute;right:52px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-family:'Dela Gothic One',cursive;font-size:13px;letter-spacing:0.22em;color:rgba(0,0,0,0.25);white-space:nowrap;">${slogan}</div>` : ''}
-      <!-- Organizer top right -->
-      ${organizer ? `<div style="position:absolute;top:28px;right:80px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:rgba(0,0,0,0.45);letter-spacing:0.08em;">${organizer}</div>` : ''}
-      <!-- Content -->
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;z-index:10;${contentAlign}">
-        <div style="display:inline-block;background:${theme.dark};color:${theme.accent};font-family:'Dela Gothic One',cursive;font-size:12px;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>
-        <div style="font-family:'Dela Gothic One',cursive;font-size:${title.length > 10 ? '54' : '68'}px;line-height:1.05;color:${theme.dark};text-shadow:3px 3px 0 rgba(255,255,255,0.35);margin-bottom:14px;">${title}</div>
-        ${subtitle ? `<div style="font-family:'Zen Maru Gothic',sans-serif;font-size:20px;font-weight:700;color:${theme.dark};opacity:0.72;margin-bottom:28px;">${subtitle}</div>` : ''}
-        <div style="display:flex;gap:16px;flex-wrap:wrap;">${metaHTML}</div>
-      </div>
-    </div>
-  `;
-
-  // Inject meta styles
-  const styleEl = document.createElement('style');
-  styleEl.innerHTML = `
-    .meta-item { background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-radius:12px;padding:10px 18px; }
-    .meta-label { font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase; }
-    .meta-value { font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:900;color:${theme.dark}; }
-  `;
-  canvas.appendChild(styleEl);
-
-  // Save data for Canvas-based download
-  currentPosterData = { title, subtitle, date, place, slogan, organizer, layout, theme: currentTheme };
-
+  currentPosterData = { title:title, subtitle:subtitle, date:date, place:place, slogan:slogan, organizer:organizer, layout:layout, theme:currentTheme };
   scaleCanvas();
   document.getElementById('dl-btn').disabled = false;
+  document.getElementById('dl-video-btn').disabled = false;
 }
 
-// Store current poster data for download
-let currentPosterData = null;
-
+/* ========== PNG DOWNLOAD ========== */
 async function downloadPoster() {
   if (!currentPosterData) return;
-  const btn = document.getElementById('dl-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ 生成中...';
-
+  var btn = document.getElementById('dl-btn');
+  btn.disabled = true; btn.textContent = '⏳ 生成中...';
   try {
-    // Build a standalone HTML string of the poster at full 1200x630
-    const html = buildStandalonePosterHTML(currentPosterData);
-
-    // Write into a hidden iframe so the browser lays it out at exact size
-    const iframe = document.createElement('iframe');
+    var html = buildPosterHTML(currentPosterData);
+    var iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;height:630px;border:none;visibility:hidden;';
     document.body.appendChild(iframe);
     iframe.contentDocument.open();
     iframe.contentDocument.write(html);
     iframe.contentDocument.close();
+    await new Promise(function(r){ setTimeout(r, 1800); });
 
-    // Wait for fonts + layout
-    await new Promise(r => setTimeout(r, 1800));
-
-    // Use html2canvas on the iframe body
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    document.head.appendChild(script);
-    await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
-
-    const canvas = await window.html2canvas(iframe.contentDocument.body, {
-      width: 1200,
-      height: 630,
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      windowWidth: 1200,
-      windowHeight: 630,
-      x: 0,
-      y: 0,
-    });
-
+    if (!window.html2canvas) {
+      await new Promise(function(res, rej) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    var c = await window.html2canvas(iframe.contentDocument.body, { width:1200, height:630, scale:2, useCORS:true, allowTaint:true, backgroundColor:null, windowWidth:1200, windowHeight:630 });
     document.body.removeChild(iframe);
-
-    const link = document.createElement('a');
+    var link = document.createElement('a');
     link.download = 'event-poster.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = c.toDataURL('image/png');
     link.click();
-
   } catch(e) {
-    console.error(e);
     alert('ダウンロードに失敗しました: ' + e.message);
   }
-
-  btn.disabled = false;
-  btn.textContent = '⬇️ 画像をダウンロード（PNG）';
+  btn.disabled = false; btn.textContent = '⬇️ 画像をダウンロード（PNG）';
 }
 
-function buildStandalonePosterHTML(d) {
-  const theme = THEMES[d.theme];
-  const colors = getThemeGradient(d.theme);
-  const titleSize = d.title.length > 10 ? 54 : 68;
-
-  const metaItems = [];
-  if (d.date)  metaItems.push({ label: 'DATE',  value: d.date });
-  if (d.place) metaItems.push({ label: 'PLACE', value: d.place });
-
-  const metaHTML = metaItems.map(m => `
-    <div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">${m.label}</div>
-      <div style="font-size:15px;font-weight:900;color:${theme.dark};">${m.value}</div>
-    </div>`).join('');
-
-  return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { width:1200px; height:630px; overflow:hidden; font-family:'Noto Sans JP',sans-serif; }
-</style>
-</head><body>
-<div style="
-  width:1200px; height:630px; position:relative; overflow:hidden;
-  background: linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%);
-">
-  <!-- deco circles -->
-  <div style="position:absolute;width:560px;height:560px;border-radius:50%;background:rgba(255,255,255,0.18);top:-140px;right:-80px;"></div>
-  <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-100px;right:140px;"></div>
-  <div style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.30);top:70px;right:310px;"></div>
-
-  ${d.organizer ? `<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:rgba(0,0,0,0.40);letter-spacing:0.08em;">${d.organizer}</div>` : ''}
-  ${d.slogan    ? `<div style="position:absolute;right:44px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:12px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.22);white-space:nowrap;">${d.slogan.toUpperCase()}</div>` : ''}
-
-  <!-- content -->
-  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;">
-    <div style="display:inline-block;background:${theme.dark};color:${theme.accent};font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>
-    <div style="font-size:${titleSize}px;font-weight:900;line-height:1.05;color:${theme.dark};margin-bottom:14px;">${d.title}</div>
-    ${d.subtitle ? `<div style="font-size:20px;font-weight:700;color:${theme.dark};opacity:0.72;margin-bottom:28px;">${d.subtitle}</div>` : ''}
-    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;">${metaHTML}</div>
-  </div>
-</div>
-</body></html>`;
+function buildPosterHTML(d) {
+  var theme = THEMES[d.theme];
+  var grads = GRADIENTS[d.theme];
+  var titleSize = d.title.length > 10 ? 54 : 68;
+  var metaHTML = '';
+  if (d.date)  metaHTML += '<div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">DATE</div><div style="font-size:15px;font-weight:900;color:' + theme.dark + ';">' + d.date  + '</div></div>';
+  if (d.place) metaHTML += '<div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">PLACE</div><div style="font-size:15px;font-weight:900;color:' + theme.dark + ';">' + d.place + '</div></div>';
+  var sloganHTML = d.slogan ? '<div style="position:absolute;right:44px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:12px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.22);white-space:nowrap;">' + d.slogan.toUpperCase() + '</div>' : '';
+  var orgHTML    = d.organizer ? '<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:rgba(0,0,0,0.40);letter-spacing:0.08em;">' + d.organizer + '</div>' : '';
+  var subHTML    = d.subtitle ? '<div style="font-size:20px;font-weight:700;color:' + theme.dark + ';opacity:0.72;margin-bottom:28px;">' + d.subtitle + '</div>' : '';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">'
+    + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{width:1200px;height:630px;overflow:hidden;font-family:"Noto Sans JP",sans-serif;}</style>'
+    + '</head><body>'
+    + '<div style="width:1200px;height:630px;position:relative;overflow:hidden;background:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ');">'
+    +   '<div style="position:absolute;width:560px;height:560px;border-radius:50%;background:rgba(255,255,255,0.18);top:-140px;right:-80px;"></div>'
+    +   '<div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-100px;right:140px;"></div>'
+    +   '<div style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.30);top:70px;right:310px;"></div>'
+    +   sloganHTML + orgHTML
+    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;">'
+    +     '<div style="display:inline-block;background:' + theme.dark + ';color:' + theme.accent + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>'
+    +     '<div style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + theme.dark + ';margin-bottom:14px;">' + d.title + '</div>'
+    +     subHTML
+    +     '<div style="display:flex;flex-wrap:wrap;">' + metaHTML + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '</body></html>';
 }
 
-function getThemeGradient(theme) {
-  const map = {
-    pop:    ['#ff6b9d', '#6bcbff'],
-    ocean:  ['#0099ff', '#00e5c5'],
-    sunset: ['#ff4e00', '#ffcc00'],
-    night:  ['#7b2fff', '#ff6bff'],
-    forest: ['#00c853', '#aaff00'],
-  };
-  return map[theme] || map.pop;
+/* ========== VIDEO DOWNLOAD ========== */
+async function downloadVideo() {
+  if (!currentPosterData) return;
+  var btn = document.getElementById('dl-video-btn');
+  btn.disabled = true; btn.textContent = '⏳ 録画中（5秒）...';
+  try {
+    var d = currentPosterData;
+    var theme = THEMES[d.theme];
+    var grads = GRADIENTS[d.theme];
+    var titleSize = d.title.length > 10 ? 54 : 68;
+
+    var offscreen = document.createElement('canvas');
+    offscreen.width = 1200; offscreen.height = 630;
+    var ctx = offscreen.getContext('2d');
+
+    var stream = offscreen.captureStream(30);
+    var recorder = new MediaRecorder(stream, { mimeType:'video/webm;codecs=vp9' });
+    var chunks = [];
+    recorder.ondataavailable = function(e){ chunks.push(e.data); };
+
+    var startTime = performance.now();
+    var DURATION = 5000;
+    recorder.start();
+
+    function drawFrame(now) {
+      var t = (now - startTime) / 1000;
+      var elapsed = now - startTime;
+      ctx.clearRect(0, 0, 1200, 630);
+
+      // Animated gradient
+      var p = (Math.sin(t * 0.4) * 0.5 + 0.5);
+      var grad = ctx.createLinearGradient(0, 0, 1200 * (0.4 + p * 0.6), 630);
+      grad.addColorStop(0, grads[0]);
+      grad.addColorStop(0.5, grads[1]);
+      grad.addColorStop(1, grads[2]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // Floating circles
+      var ax = Math.sin(t * 0.7) * 18, ay = Math.cos(t * 0.5) * 22;
+      var bx = Math.cos(t * 0.6) * 20, by = Math.sin(t * 0.4) * 18;
+      var cx = Math.sin(t * 1.1) * 10, cy = Math.cos(t * 0.9) * 16;
+      ctx.save();
+      ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(1150 + ax, 110 + ay, 280, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 0.10; ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(1080 + bx, 545 + by, 200, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 0.30; ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(960 + cx, 100 + cy, 60, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      // Organizer
+      if (d.organizer) {
+        ctx.textAlign = 'right'; ctx.font = '700 12px sans-serif'; ctx.fillStyle = 'rgba(0,0,0,0.40)';
+        ctx.fillText(d.organizer, 1120, 48);
+      }
+      // Slogan
+      if (d.slogan) {
+        ctx.save(); ctx.translate(1156, 315); ctx.rotate(Math.PI/2);
+        ctx.font = '700 12px sans-serif'; ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.textAlign = 'center';
+        ctx.fillText(d.slogan.toUpperCase(), 0, 0); ctx.restore();
+      }
+
+      function fade(start, dur) { return Math.min(1, Math.max(0, (t - start) / dur)); }
+
+      // EVENT badge
+      var ba = fade(0.1, 0.5);
+      if (ba > 0) {
+        ctx.globalAlpha = ba; ctx.fillStyle = theme.dark;
+        rrect(ctx, 80, 170, 80, 28, 14); ctx.fill();
+        ctx.fillStyle = theme.accent; ctx.font = '700 12px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('EVENT', 96, 189); ctx.globalAlpha = 1;
+      }
+
+      // Title
+      var ta = fade(0.3, 0.6), to = (1 - ta) * 24;
+      if (ta > 0) {
+        ctx.globalAlpha = ta; ctx.fillStyle = theme.dark;
+        ctx.font = '900 ' + titleSize + 'px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText(d.title, 80, 240 + titleSize * 0.75 + to); ctx.globalAlpha = 1;
+      }
+
+      // Subtitle
+      if (d.subtitle) {
+        var sa = fade(0.55, 0.6), so = (1 - sa) * 24;
+        if (sa > 0) {
+          ctx.globalAlpha = sa * 0.72; ctx.fillStyle = theme.dark;
+          ctx.font = '700 20px sans-serif'; ctx.fillText(d.subtitle, 80, 345 + so); ctx.globalAlpha = 1;
+        }
+      }
+
+      // Meta
+      var ma = fade(0.8, 0.6), mo = (1 - ma) * 24;
+      if (ma > 0) {
+        var metaY = d.subtitle ? 385 : 355;
+        var items = [];
+        if (d.date)  items.push({ label:'DATE',  val:d.date });
+        if (d.place) items.push({ label:'PLACE', val:d.place });
+        var mx2 = 80;
+        ctx.globalAlpha = ma;
+        for (var i = 0; i < items.length; i++) {
+          ctx.font = '700 13px sans-serif';
+          var vw = Math.max(ctx.measureText(items[i].val).width, ctx.measureText(items[i].label).width) + 40;
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          rrect(ctx, mx2, metaY + mo, vw, 54, 12); ctx.fill();
+          ctx.font = '700 10px sans-serif'; ctx.fillStyle = '#555';
+          ctx.fillText(items[i].label, mx2 + 18, metaY + 18 + mo);
+          ctx.font = '900 15px sans-serif'; ctx.fillStyle = theme.dark;
+          ctx.fillText(items[i].val, mx2 + 18, metaY + 38 + mo);
+          mx2 += vw + 16;
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      if (elapsed < DURATION) { requestAnimationFrame(drawFrame); }
+      else { recorder.stop(); }
+    }
+    requestAnimationFrame(drawFrame);
+
+    await new Promise(function(res){ recorder.onstop = res; });
+    var blob = new Blob(chunks, { type:'video/webm' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.download = 'event-banner.webm'; link.href = url; link.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert('動画生成に失敗しました: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '🎬 動画をダウンロード（WebM）';
+}
+
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y); ctx.closePath();
 }
 </script>
 </body>
