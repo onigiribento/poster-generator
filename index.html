@@ -116,8 +116,9 @@ select option { background:#fff; color:#1a1a2e; }
 <div class="main-layout">
   <div class="left-panel">
     <div class="section-title">📝 イベント情報</div>
-    <label>イベント名 *</label>
-    <input type="text" id="inp-title" placeholder="例: デザファク夏祭り2026" />
+    <label>イベント名 *　<span style="font-size:11px;color:#aaa;font-weight:400;">Shift+Enterで改行</span></label>
+    <textarea id="inp-title" placeholder="例: デザファク夏祭り2026" rows="2" style="resize:vertical;min-height:48px;"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();}"></textarea>
     <label>サブタイトル・キャッチ</label>
     <input type="text" id="inp-subtitle" placeholder="例: AIとデザインが出会う夜" />
     <label>日時</label>
@@ -423,7 +424,7 @@ function generatePoster() {
     +   orgHTML
     +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;z-index:10;width:' + textColWidth + ';' + contentAlign + '">'
     +     '<div class="anim-badge" style="display:inline-block;background:' + textColor + ';color:' + accentColor + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>'
-    +     '<div class="anim-title" style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + textColor + ';text-shadow:3px 3px 0 rgba(128,128,128,0.15);margin-bottom:14px;">' + title + '</div>'
+    +     '<div class="anim-title" style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + textColor + ';text-shadow:3px 3px 0 rgba(128,128,128,0.15);margin-bottom:14px;white-space:pre-wrap;">' + title + '</div>'
     +     subHTML
     +     '<div class="anim-meta" style="display:flex;flex-wrap:wrap;">' + metaHTML + '</div>'
     +     sloganInlineHTML
@@ -441,50 +442,174 @@ function generatePoster() {
   document.getElementById('dl-video-btn').disabled = false;
 }
 
-/* ========== PNG DOWNLOAD ========== */
+/* ========== PNG DOWNLOAD（Canvas直接描画） ========== */
 async function downloadPoster() {
   if (!currentPosterData) return;
   var btn = document.getElementById('dl-btn');
   btn.disabled = true; btn.textContent = '⏳ 生成中...';
   try {
     var d = currentPosterData;
+    var theme = THEMES[d.theme];
+    var grads = GRADIENTS[d.theme];
+    var titleSize = d.title.length > 10 ? 54 : 68;
+    var hasImage = !!d.imgDataURL;
+    var imgLayout = d.imgLayout || 'none';
+    var imgSize = d.imgSize !== undefined ? d.imgSize : 100;
+    var imgPos  = d.imgPos  !== undefined ? d.imgPos  : 50;
+    var darkColor = (hasImage && imgLayout === 'bg') ? '#ffffff'
+                  : d.theme === 'dark'  ? '#ffffff'
+                  : d.theme === 'navy'  ? '#1a1a2e'
+                  : theme.dark;
+    var accentColor = d.theme === 'dark' ? '#ffd93d' : d.theme === 'navy' ? '#1a1a2e' : theme.accent;
 
-    // 画像を事前にCanvasで正しい比率にクロップしてbase64化
-    var processedImgURL = null;
-    if (d.imgDataURL && d.imgLayout !== 'none') {
-      processedImgURL = await cropImageToCanvas(
-        d.imgDataURL,
-        d.imgLayout === 'right' ? 576 : 1200,
-        630,
-        d.imgSize || 100,
-        d.imgPos !== undefined ? d.imgPos : 50
-      );
+    var W = 1200, H = 630;
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+
+    // 画像プリロード
+    var imgEl = null;
+    if (hasImage) {
+      imgEl = new Image();
+      await new Promise(function(res){ imgEl.onload = res; imgEl.src = d.imgDataURL; });
     }
 
-    var html = buildPosterHTML(d, processedImgURL);
-    var iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;height:630px;border:none;visibility:hidden;';
-    document.body.appendChild(iframe);
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(html);
-    iframe.contentDocument.close();
-    await new Promise(function(r){ setTimeout(r, 2000); });
-    if (!window.html2canvas) {
-      await new Promise(function(res, rej) {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
+    // --- 背景 ---
+    if (hasImage && imgLayout === 'bg') {
+      ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip();
+      drawImageCover(ctx, imgEl, 0, 0, W, H, imgSize, imgPos);
+      ctx.restore();
+      var ov = ctx.createLinearGradient(0,0,W,H);
+      ov.addColorStop(0, grads[0]+'cc'); ov.addColorStop(1, grads[2]+'99');
+      ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+    } else {
+      // グラデーション背景
+      var p = 0.5;
+      var grad = ctx.createLinearGradient(0, 0, W*(0.4+p*0.6), H);
+      grad.addColorStop(0, grads[0]); grad.addColorStop(0.5, grads[1]); grad.addColorStop(1, grads[2]);
+      ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+      // デコ円
+      ctx.save();
+      ctx.globalAlpha=0.18; ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(1150, 110, 280, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha=0.10; ctx.fillStyle='#000';
+      ctx.beginPath(); ctx.arc(1080, 545, 200, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha=0.30; ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(960, 100, 60, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      // 右側画像パネル
+      if (hasImage && imgLayout === 'right') {
+        ctx.save(); ctx.beginPath(); ctx.rect(576,0,624,H); ctx.clip();
+        drawImageCover(ctx, imgEl, 576, 0, 624, H, imgSize, imgPos);
+        var fade = ctx.createLinearGradient(576,0,820,0);
+        fade.addColorStop(0,'rgba(0,0,0,0.18)'); fade.addColorStop(1,'transparent');
+        ctx.fillStyle=fade; ctx.fillRect(576,0,624,H);
+        ctx.restore();
+      }
     }
-    var c = await window.html2canvas(iframe.contentDocument.body, { width:1200, height:630, scale:2, useCORS:true, allowTaint:true, backgroundColor:null, windowWidth:1200, windowHeight:630 });
-    document.body.removeChild(iframe);
+
+    // --- テキスト共通設定 ---
+    var textAlign = d.layout === 'center' ? 'center' : 'left';
+    var textX = d.layout === 'center' ? (hasImage && imgLayout==='right' ? 330 : 600) : 80;
+    var textColW = (hasImage && imgLayout==='right') ? 576 : W;
+
+    // 主催
+    if (d.organizer) {
+      ctx.textAlign='right'; ctx.font='700 12px sans-serif';
+      ctx.fillStyle='rgba(0,0,0,0.40)';
+      ctx.fillText(d.organizer, 1120, 48);
+    }
+    // スローガン（縦書き風、右端）
+    if (d.slogan && !(hasImage && imgLayout==='right')) {
+      ctx.save(); ctx.translate(1156,315); ctx.rotate(Math.PI/2);
+      ctx.font='700 12px sans-serif'; ctx.fillStyle='rgba(128,128,128,0.4)'; ctx.textAlign='center';
+      ctx.fillText(d.slogan.toUpperCase(),0,0); ctx.restore();
+    }
+
+    // EVENTバッジ
+    ctx.fillStyle = darkColor;
+    rrect(ctx, textX-(textAlign==='center'?40:0), 170, 80, 28, 14); ctx.fill();
+    ctx.fillStyle = accentColor; ctx.font='700 12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('EVENT', textX-(textAlign==='center'?40:0)+16, 189);
+
+    // タイトル（\n で手動改行 + 長い行は自動折り返し）
+    ctx.fillStyle = darkColor; ctx.textAlign = textAlign;
+    ctx.font = '900 '+titleSize+'px sans-serif';
+    var maxW = (hasImage && imgLayout==='right') ? 490 : 1040;
+    var manualLines = d.title.split('\n');
+    var lines = [];
+    manualLines.forEach(function(ml) { wrapText(ctx, ml, maxW).forEach(function(l){ lines.push(l); }); });
+    var ty = 240 + titleSize * 0.75;
+    lines.forEach(function(line) {
+      ctx.fillText(line, textX, ty); ty += titleSize * 1.1;
+    });
+
+    // サブタイトル
+    if (d.subtitle) {
+      var sy = ty + 10;
+      ctx.globalAlpha=0.72; ctx.font='700 20px sans-serif'; ctx.textAlign=textAlign;
+      ctx.fillStyle=darkColor; ctx.fillText(d.subtitle, textX, sy); ctx.globalAlpha=1;
+      ty = sy + 38;
+    } else { ty += 10; }
+
+    // スローガン（右に画像がある場合は左下に横書き）
+    if (d.slogan && hasImage && imgLayout==='right') {
+      ctx.globalAlpha=0.4; ctx.font='700 12px sans-serif'; ctx.textAlign=textAlign;
+      ctx.fillStyle=darkColor; ctx.fillText(d.slogan.toUpperCase(), textX, ty+10); ctx.globalAlpha=1;
+      ty += 28;
+    }
+
+    // DATEとPLACEのピル
+    var pills = [];
+    if (d.date)  pills.push({label:'DATE',  val:d.date});
+    if (d.place) pills.push({label:'PLACE', val:d.place});
+    // 幅をそれぞれの実際のフォントサイズで計測
+    function pillWidth(pill) {
+      ctx.font='700 10px sans-serif';
+      var lw = ctx.measureText(pill.label).width;
+      ctx.font='900 15px sans-serif';
+      var vw = ctx.measureText(pill.val).width;
+      return Math.max(lw, vw) + 40; // 左右パディング各20px
+    }
+    var mx = textAlign==='center' ? null : 80;
+    if (textAlign==='center') {
+      var totalW = 0;
+      pills.forEach(function(p){ totalW += pillWidth(p) + 16; });
+      mx = (textColW - totalW) / 2;
+    }
+    pills.forEach(function(pill) {
+      var vw = pillWidth(pill);
+      ctx.fillStyle='rgba(255,255,255,0.5)'; rrect(ctx,mx,ty,vw,54,12); ctx.fill();
+      ctx.font='700 10px sans-serif'; ctx.fillStyle='#555'; ctx.textAlign='left';
+      ctx.fillText(pill.label, mx+18, ty+18);
+      ctx.font='900 15px sans-serif'; ctx.fillStyle=darkColor;
+      ctx.fillText(pill.val, mx+18, ty+38);
+      mx += vw+16;
+    });
+
+    // ダウンロード
     var link = document.createElement('a');
     link.download = 'event-poster.png';
-    link.href = c.toDataURL('image/png');
+    link.href = canvas.toDataURL('image/png');
     link.click();
   } catch(e) { alert('ダウンロードに失敗しました: ' + e.message); }
   btn.disabled = false; btn.textContent = '⬇️ PNG';
+}
+
+// テキスト折り返しヘルパー
+function wrapText(ctx, text, maxWidth) {
+  var words = text.split('');
+  var lines = [], line = '';
+  for (var i=0; i<words.length; i++) {
+    var test = line + words[i];
+    if (ctx.measureText(test).width > maxWidth && line.length > 0) {
+      lines.push(line); line = words[i];
+    } else { line = test; }
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 // 画像をプレビューと同じロジックでCanvasに描画してbase64で返す
@@ -553,7 +678,7 @@ function buildPosterHTML(d, processedImgURL) {
     }
   }
 
-  var bgStyle = (imgLayout === 'bg') ? '' : 'background-image:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ');background-size:cover;';
+  var bgStyle = (imgLayout === 'bg') ? '' : 'background:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ') center/cover no-repeat;';
   var decoHTML = (imgLayout !== 'bg') ? ('<div style="position:absolute;width:560px;height:560px;border-radius:50%;background:rgba(255,255,255,0.18);top:-140px;right:-80px;"></div><div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-100px;right:140px;"></div><div style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.30);top:70px;right:310px;"></div>') : '';
 
   var fontCSS    = d.fontCSS || '"Noto Sans JP", sans-serif';
@@ -774,7 +899,10 @@ async function downloadVideo() {
       if (ta > 0) {
         ctx.globalAlpha=ta; ctx.fillStyle=darkColor;
         ctx.font='900 ' + titleSize + 'px sans-serif'; ctx.textAlign='left';
-        ctx.fillText(d.title, 80, 240+titleSize*0.75+to); ctx.globalAlpha=1;
+        var titleLines2 = d.title.split('\n');
+        var tly = 240+titleSize*0.75+to;
+        titleLines2.forEach(function(line){ ctx.fillText(line, 80, tly); tly += titleSize*1.1; });
+        ctx.globalAlpha=1;
       }
       if (d.subtitle) {
         var sa=fade(0.55,0.6), so=(1-sa)*24;
@@ -788,8 +916,11 @@ async function downloadVideo() {
         if (d.place) items.push({label:'PLACE',val:d.place});
         var mx2=80; ctx.globalAlpha=ma;
         for (var i=0;i<items.length;i++) {
-          ctx.font='700 13px sans-serif';
-          var vw=Math.max(ctx.measureText(items[i].val).width, ctx.measureText(items[i].label).width)+40;
+          ctx.font='700 10px sans-serif';
+          var lw2=ctx.measureText(items[i].label).width;
+          ctx.font='900 15px sans-serif';
+          var vw2=ctx.measureText(items[i].val).width;
+          var vw=Math.max(lw2,vw2)+40;
           ctx.fillStyle='rgba(255,255,255,0.5)'; rrect(ctx,mx2,metaY+mo,vw,54,12); ctx.fill();
           ctx.font='700 10px sans-serif'; ctx.fillStyle='#555'; ctx.fillText(items[i].label,mx2+18,metaY+18+mo);
           ctx.font='900 15px sans-serif'; ctx.fillStyle=darkColor; ctx.fillText(items[i].val,mx2+18,metaY+38+mo);
