@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 イベントポスタージェネレーター</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: #0f0f1a;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  .app-header {
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .app-header h1 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 22px;
+    background: linear-gradient(90deg, #ff6b9d, #ffd93d, #6bcbff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    height: calc(100vh - 73px);
+  }
+
+  /* ===== LEFT PANEL ===== */
+  .left-panel {
+    background: #16162a;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: #ccc;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: #0f0f1a;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: #ff6b9d;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .color-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .color-chip {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-chip:hover { transform: scale(1.15); }
+  .color-chip.active { border-color: #fff; transform: scale(1.15); }
+
+  .generate-btn {
+    width: 100%;
+    margin-top: 28px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ff6b9d, #ffd93d);
+    color: #0f0f1a;
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .generate-btn:active { transform: translateY(0); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .loading-text {
+    text-align: center;
+    font-size: 13px;
+    color: #ffd93d;
+    margin-top: 10px;
+    min-height: 20px;
+    display: none;
+  }
+  .loading-text.visible { display: block; }
+
+  /* ===== RIGHT PANEL ===== */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 32px;
+    overflow-y: auto;
+    gap: 20px;
+  }
+
+  .preview-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: #666;
+    text-transform: uppercase;
+    align-self: flex-start;
+  }
+
+  .poster-wrapper {
+    width: 100%;
+    max-width: 840px;
+    aspect-ratio: 1200/630;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  #poster-canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /* ===== POSTER STYLES ===== */
+  .poster {
+    width: 1200px;
+    height: 630px;
+    position: relative;
+    overflow: hidden;
+    transform-origin: top left;
+  }
+
+  .poster-bg {
+    position: absolute; inset: 0;
+  }
+
+  .poster-content {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    z-index: 10;
+  }
+
+  /* STYLE: POP */
+  .style-pop .poster-bg {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ffd93d 50%, #6bcbff 100%);
+  }
+  .style-pop .deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.25;
+  }
+  .style-pop .tag-badge {
+    display: inline-block;
+    background: #0f0f1a;
+    color: #ffd93d;
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 13px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    width: fit-content;
+  }
+  .style-pop .event-title {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 68px;
+    line-height: 1.05;
+    color: #0f0f1a;
+    text-shadow: 4px 4px 0 rgba(255,255,255,0.4);
+    margin-bottom: 16px;
+  }
+  .style-pop .event-subtitle {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f0f1a;
+    opacity: 0.75;
+    margin-bottom: 28px;
+  }
+  .style-pop .event-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .style-pop .meta-item {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 10px 18px;
+  }
+  .style-pop .meta-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #555;
+    text-transform: uppercase;
+  }
+  .style-pop .meta-value {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: #0f0f1a;
+  }
+  .style-pop .slogan {
+    position: absolute;
+    right: 60px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+    transform-origin: center;
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    color: rgba(15,15,26,0.4);
+    white-space: nowrap;
+  }
+  .style-pop .right-deco {
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 300px;
+    height: 300px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+  }
+  .style-pop .right-deco2 {
+    position: absolute;
+    right: 80px;
+    bottom: -80px;
+    width: 250px;
+    height: 250px;
+    background: rgba(15,15,26,0.12);
+    border-radius: 50%;
+  }
+
+  /* download btn */
+  .download-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    background: #fff;
+    color: #0f0f1a;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    align-self: center;
+  }
+  .download-btn:hover { background: #ffd93d; }
+  .download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .placeholder-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .placeholder-msg .icon { font-size: 40px; }
+
+  .bottom-actions {
+    display: flex;
+    gap: 12px;
+    align-self: stretch;
+    justify-content: center;
+  }
+
+  select option { background: #16162a; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <span style="font-size:24px">🎨</span>
+  <h1>イベントポスタージェネレーター</h1>
+</header>
+
+<div class="main-layout">
+  <!-- LEFT: INPUT -->
+  <div class="left-panel">
+    <div class="section-title">📝 イベント情報</div>
+
+    <label>イベント名 *</label>
+    <input type="text" id="inp-title" placeholder="例: デザファク夏祭り2026" />
+
+    <label>サブタイトル・キャッチ</label>
+    <input type="text" id="inp-subtitle" placeholder="例: AIとデザインが出会う夜" />
+
+    <label>日時</label>
+    <input type="text" id="inp-date" placeholder="例: 2026年7月15日（水）19:00〜" />
+
+    <label>場所</label>
+    <input type="text" id="inp-place" placeholder="例: CyberAgent渋谷オフィス" />
+
+    <label>スローガン・補足テキスト</label>
+    <textarea id="inp-slogan" placeholder="例: CREATE THE FUTURE"></textarea>
+
+    <label>主催・ロゴテキスト</label>
+    <input type="text" id="inp-organizer" placeholder="例: デザファク × AI推進チーム" />
+
+    <div class="section-title">🎨 デザイン設定</div>
+
+    <label>カラーテーマ</label>
+    <div class="color-row" id="color-picker">
+      <div class="color-chip active" data-theme="pop" style="background: linear-gradient(135deg,#ff6b9d,#ffd93d)" title="ポップ"></div>
+      <div class="color-chip" data-theme="ocean" style="background: linear-gradient(135deg,#0099ff,#00e5c5)" title="オーシャン"></div>
+      <div class="color-chip" data-theme="sunset" style="background: linear-gradient(135deg,#ff4e00,#ffcc00)" title="サンセット"></div>
+      <div class="color-chip" data-theme="night" style="background: linear-gradient(135deg,#7b2fff,#ff6bff)" title="ナイト"></div>
+      <div class="color-chip" data-theme="forest" style="background: linear-gradient(135deg,#00c853,#aaff00)" title="フォレスト"></div>
+    </div>
+
+    <label style="margin-top:16px">レイアウト</label>
+    <select id="inp-layout">
+      <option value="left">左寄せ（標準）</option>
+      <option value="center">中央揃え</option>
+      <option value="split">左右分割</option>
+    </select>
+
+    <button class="generate-btn" id="gen-btn" onclick="generatePoster()">✨ ポスターを生成する</button>
+    <div class="loading-text" id="loading-text">🤖 AIがデザインを生成中...</div>
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="right-panel">
+    <div class="preview-label">プレビュー（1200 × 630px）</div>
+
+    <div class="poster-wrapper">
+      <div id="poster-canvas" style="transform-origin:top left;">
+        <div class="placeholder-msg" id="placeholder">
+          <span class="icon">🖼️</span>
+          <span>左のフォームに情報を入力して<br>「ポスターを生成する」を押してください</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="download-btn" id="dl-btn" disabled onclick="downloadPoster()">⬇️ 画像をダウンロード（PNG）</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const THEMES = {
+  pop:    { bg: 'linear-gradient(135deg, #ff6b9d 0%, #ffd93d 55%, #6bcbff 100%)', accent: '#ffd93d', dark: '#0f0f1a' },
+  ocean:  { bg: 'linear-gradient(135deg, #0099ff 0%, #00e5c5 100%)', accent: '#00e5c5', dark: '#001a33' },
+  sunset: { bg: 'linear-gradient(135deg, #ff4e00 0%, #ffcc00 100%)', accent: '#ffcc00', dark: '#1a0a00' },
+  night:  { bg: 'linear-gradient(135deg, #7b2fff 0%, #ff6bff 100%)', accent: '#ff6bff', dark: '#0d001a' },
+  forest: { bg: 'linear-gradient(135deg, #00c853 0%, #aaff00 100%)', accent: '#aaff00', dark: '#001a0a' },
+};
+
+let currentTheme = 'pop';
+
+// Color chip selection
+document.getElementById('color-picker').addEventListener('click', e => {
+  const chip = e.target.closest('.color-chip');
+  if (!chip) return;
+  document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  currentTheme = chip.dataset.theme;
+});
+
+function scaleCanvas() {
+  const wrapper = document.querySelector('.poster-wrapper');
+  const canvas = document.getElementById('poster-canvas');
+  const scale = wrapper.clientWidth / 1200;
+  canvas.style.transform = `scale(${scale})`;
+  canvas.style.width = '1200px';
+  canvas.style.height = '630px';
+  wrapper.style.height = (630 * scale) + 'px';
+}
+window.addEventListener('resize', scaleCanvas);
+
+function generatePoster() {
+  const title = document.getElementById('inp-title').value.trim();
+  if (!title) { alert('イベント名を入力してください'); return; }
+
+  const subtitle  = document.getElementById('inp-subtitle').value.trim();
+  const date      = document.getElementById('inp-date').value.trim();
+  const place     = document.getElementById('inp-place').value.trim();
+  const slogan    = document.getElementById('inp-slogan').value.trim();
+  const organizer = document.getElementById('inp-organizer').value.trim();
+  const layout    = document.getElementById('inp-layout').value;
+  const theme     = THEMES[currentTheme];
+
+  const canvas = document.getElementById('poster-canvas');
+  const placeholder = document.getElementById('placeholder');
+  if (placeholder) placeholder.remove();
+
+  // META items
+  const metaItems = [];
+  if (date)  metaItems.push({ label: 'DATE', value: date });
+  if (place) metaItems.push({ label: 'PLACE', value: place });
+
+  const metaHTML = metaItems.map(m => `
+    <div class="meta-item">
+      <div class="meta-label">${m.label}</div>
+      <div class="meta-value">${m.value}</div>
+    </div>
+  `).join('');
+
+  const contentAlign = layout === 'center' ? 'align-items:center;text-align:center;' : '';
+
+  canvas.innerHTML = `
+    <div class="poster style-pop" style="width:1200px;height:630px;">
+      <div class="poster-bg" style="background:${theme.bg};"></div>
+      <!-- Deco circles -->
+      <div style="position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,0.18);top:-100px;right:-60px;"></div>
+      <div style="position:absolute;width:250px;height:250px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-80px;right:120px;"></div>
+      <div style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.3);top:60px;right:280px;"></div>
+      <!-- Slogan vertical -->
+      ${slogan ? `<div style="position:absolute;right:52px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-family:'Dela Gothic One',cursive;font-size:13px;letter-spacing:0.22em;color:rgba(0,0,0,0.25);white-space:nowrap;">${slogan}</div>` : ''}
+      <!-- Organizer top right -->
+      ${organizer ? `<div style="position:absolute;top:28px;right:80px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:rgba(0,0,0,0.45);letter-spacing:0.08em;">${organizer}</div>` : ''}
+      <!-- Content -->
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;z-index:10;${contentAlign}">
+        <div style="display:inline-block;background:${theme.dark};color:${theme.accent};font-family:'Dela Gothic One',cursive;font-size:12px;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>
+        <div style="font-family:'Dela Gothic One',cursive;font-size:${title.length > 10 ? '54' : '68'}px;line-height:1.05;color:${theme.dark};text-shadow:3px 3px 0 rgba(255,255,255,0.35);margin-bottom:14px;">${title}</div>
+        ${subtitle ? `<div style="font-family:'Zen Maru Gothic',sans-serif;font-size:20px;font-weight:700;color:${theme.dark};opacity:0.72;margin-bottom:28px;">${subtitle}</div>` : ''}
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">${metaHTML}</div>
+      </div>
+    </div>
+  `;
+
+  // Inject meta styles
+  const styleEl = document.createElement('style');
+  styleEl.innerHTML = `
+    .meta-item { background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);border-radius:12px;padding:10px 18px; }
+    .meta-label { font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase; }
+    .meta-value { font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:900;color:${theme.dark}; }
+  `;
+  canvas.appendChild(styleEl);
+
+  // Save data for Canvas-based download
+  currentPosterData = { title, subtitle, date, place, slogan, organizer, layout, theme: currentTheme };
+
+  scaleCanvas();
+  document.getElementById('dl-btn').disabled = false;
+}
+
+// Store current poster data for download
+let currentPosterData = null;
+
+async function downloadPoster() {
+  if (!currentPosterData) return;
+  const btn = document.getElementById('dl-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+
+  try {
+    // Build a standalone HTML string of the poster at full 1200x630
+    const html = buildStandalonePosterHTML(currentPosterData);
+
+    // Write into a hidden iframe so the browser lays it out at exact size
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;height:630px;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+
+    // Wait for fonts + layout
+    await new Promise(r => setTimeout(r, 1800));
+
+    // Use html2canvas on the iframe body
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    document.head.appendChild(script);
+    await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
+
+    const canvas = await window.html2canvas(iframe.contentDocument.body, {
+      width: 1200,
+      height: 630,
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      windowWidth: 1200,
+      windowHeight: 630,
+      x: 0,
+      y: 0,
+    });
+
+    document.body.removeChild(iframe);
+
+    const link = document.createElement('a');
+    link.download = 'event-poster.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+  } catch(e) {
+    console.error(e);
+    alert('ダウンロードに失敗しました: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⬇️ 画像をダウンロード（PNG）';
+}
+
+function buildStandalonePosterHTML(d) {
+  const theme = THEMES[d.theme];
+  const colors = getThemeGradient(d.theme);
+  const titleSize = d.title.length > 10 ? 54 : 68;
+
+  const metaItems = [];
+  if (d.date)  metaItems.push({ label: 'DATE',  value: d.date });
+  if (d.place) metaItems.push({ label: 'PLACE', value: d.place });
+
+  const metaHTML = metaItems.map(m => `
+    <div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">${m.label}</div>
+      <div style="font-size:15px;font-weight:900;color:${theme.dark};">${m.value}</div>
+    </div>`).join('');
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:630px; overflow:hidden; font-family:'Noto Sans JP',sans-serif; }
+</style>
+</head><body>
+<div style="
+  width:1200px; height:630px; position:relative; overflow:hidden;
+  background: linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%);
+">
+  <!-- deco circles -->
+  <div style="position:absolute;width:560px;height:560px;border-radius:50%;background:rgba(255,255,255,0.18);top:-140px;right:-80px;"></div>
+  <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-100px;right:140px;"></div>
+  <div style="position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.30);top:70px;right:310px;"></div>
+
+  ${d.organizer ? `<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:rgba(0,0,0,0.40);letter-spacing:0.08em;">${d.organizer}</div>` : ''}
+  ${d.slogan    ? `<div style="position:absolute;right:44px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:12px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.22);white-space:nowrap;">${d.slogan.toUpperCase()}</div>` : ''}
+
+  <!-- content -->
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;">
+    <div style="display:inline-block;background:${theme.dark};color:${theme.accent};font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>
+    <div style="font-size:${titleSize}px;font-weight:900;line-height:1.05;color:${theme.dark};margin-bottom:14px;">${d.title}</div>
+    ${d.subtitle ? `<div style="font-size:20px;font-weight:700;color:${theme.dark};opacity:0.72;margin-bottom:28px;">${d.subtitle}</div>` : ''}
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;">${metaHTML}</div>
+  </div>
+</div>
+</body></html>`;
+}
+
+function getThemeGradient(theme) {
+  const map = {
+    pop:    ['#ff6b9d', '#6bcbff'],
+    ocean:  ['#0099ff', '#00e5c5'],
+    sunset: ['#ff4e00', '#ffcc00'],
+    night:  ['#7b2fff', '#ff6bff'],
+    forest: ['#00c853', '#aaff00'],
+  };
+  return map[theme] || map.pop;
+}
+</script>
+</body>
+</html>
