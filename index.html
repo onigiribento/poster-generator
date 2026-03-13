@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎨 イベントポスタージェネレーター</title>
+<title>🎨 ポスタージェネレーター</title>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GV48825354"></script>
 <script>
@@ -51,6 +51,9 @@ select option { background:#fff; color:#1a1a2e; }
   background:#f8f9fc; color:#999; font-size:11px; cursor:pointer; transition:all 0.2s; text-align:center;
 }
 .img-layout-btn.active { border-color:#ff6b9d; color:#ff6b9d; background:rgba(255,107,157,0.08); }
+.badge-preset { padding:4px 12px; border-radius:999px; border:1px solid rgba(0,0,0,0.12); background:#f8f9fc; color:#666; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.badge-preset:hover { border-color:#ff6b9d; color:#ff6b9d; }
+.badge-preset.active { border-color:#ff6b9d; color:#ff6b9d; background:rgba(255,107,157,0.08); }
 
 .color-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
 .color-chip { width:32px; height:32px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform 0.15s, border-color 0.15s; box-shadow:0 2px 6px rgba(0,0,0,0.12); }
@@ -93,10 +96,11 @@ select option { background:#fff; color:#1a1a2e; }
 .theme-pop    { background-image:linear-gradient(135deg,#ff6b9d,#ffd93d,#6bcbff) !important; }
 .theme-ocean  { background-image:linear-gradient(135deg,#0099ff,#00c8e5,#00e5c5) !important; }
 .theme-sunset { background-image:linear-gradient(135deg,#ff4e00,#ff9900,#ffcc00) !important; }
-.theme-night  { background-image:linear-gradient(135deg,#7b2fff,#cc44ff,#ff6bff) !important; }
-.theme-forest { background-image:linear-gradient(135deg,#00c853,#66dd00,#aaff00) !important; }
+.theme-night  { background-image:linear-gradient(135deg,#6B21CE,#9B40E8,#FF6B00) !important; }
+.theme-forest { background-image:linear-gradient(135deg,#4CAF30,#4CAF30,#1B5E20) !important; }
+.theme-blue   { background-image:linear-gradient(135deg,#0D3F7A,#1B6BC0,#2BA8D8) !important; }
 .theme-dark   { background-image:linear-gradient(135deg,#1a1a1a,#2d2d2d,#111111) !important; }
-.theme-navy   { background-image:linear-gradient(135deg,#f8f9ff,#e8edf8,#ffffff) !important; }
+.theme-custom { background-image:linear-gradient(135deg,var(--grad-a),var(--grad-b)) !important; }
 .anim-circle-a { animation:floatA 7s ease-in-out infinite; }
 .anim-circle-b { animation:floatB 9s ease-in-out infinite; }
 .anim-circle-c { animation:floatC 5s ease-in-out infinite; }
@@ -110,11 +114,13 @@ select option { background:#fff; color:#1a1a2e; }
 
 <header class="app-header">
   <span style="font-size:24px">🎨</span>
-  <h1>イベントポスタージェネレーター</h1>
+  <h1>ポスタージェネレーター</h1>
 </header>
 
 <div class="main-layout">
   <div class="left-panel">
+    <div class="section-title" style="margin-top:0;">📐 サイズ</div>
+    <div id="size-picker" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px;"></div>
     <div class="section-title">📝 イベント情報</div>
     <label>イベント名 *　<span style="font-size:11px;color:#aaa;font-weight:400;">Shift+Enterで改行</span></label>
     <textarea id="inp-title" placeholder="例: デザファク夏祭り2026" rows="2" style="resize:vertical;min-height:48px;"
@@ -122,7 +128,14 @@ select option { background:#fff; color:#1a1a2e; }
     <label>サブタイトル・キャッチ</label>
     <input type="text" id="inp-subtitle" placeholder="例: AIとデザインが出会う夜" />
     <label>日時</label>
-    <input type="text" id="inp-date" placeholder="例: 2026年7月15日（水）19:00〜" />
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <input type="date" id="inp-date-picker" style="flex:1;background:#f8f9fc;border:1px solid rgba(0,0,0,0.10);border-radius:8px;color:#1a1a2e;font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:8px 10px;outline:none;cursor:pointer;"
+        onchange="syncDateToText()" />
+      <input type="time" id="inp-time-picker" value="00:00" style="width:100px;background:#f8f9fc;border:1px solid rgba(0,0,0,0.10);border-radius:8px;color:#1a1a2e;font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:8px 10px;outline:none;cursor:pointer;"
+        onchange="syncDateToText()" />
+    </div>
+    <input type="text" id="inp-date" placeholder="例: 2026年7月15日（水）19:00〜" style="margin-top:0;"
+      oninput="clearDatePickers()" />
     <label>場所</label>
     <input type="text" id="inp-place" placeholder="例: CyberAgent渋谷オフィス" />
     <label>スローガン・補足テキスト</label>
@@ -141,8 +154,9 @@ select option { background:#fff; color:#1a1a2e; }
 
     <label style="margin-top:16px">画像レイアウト</label>
     <div class="img-layout-row">
-      <div class="img-layout-btn active" data-layout="right" onclick="selectImgLayout(this)">◧ 右に配置</div>
-      <div class="img-layout-btn" data-layout="bg" onclick="selectImgLayout(this)">⬛ 背景に敷く</div>
+      <div class="img-layout-btn active" data-layout="right"  onclick="selectImgLayout(this)">◧ 右に配置</div>
+      <div class="img-layout-btn"        data-layout="bottom" onclick="selectImgLayout(this)">⬓ 下に配置</div>
+      <div class="img-layout-btn"        data-layout="bg"     onclick="selectImgLayout(this)">⬛ 背景に敷く</div>
     </div>
 
     <label style="margin-top:14px">画像サイズ <span id="img-size-val" style="color:#ffd93d;font-weight:700;">80%</span></label>
@@ -163,22 +177,85 @@ select option { background:#fff; color:#1a1a2e; }
     <div class="color-row" id="color-picker">
       <div class="color-chip active" data-theme="pop"    style="background:linear-gradient(135deg,#ff6b9d,#ffd93d)" title="ポップ"></div>
       <div class="color-chip"        data-theme="ocean"  style="background:linear-gradient(135deg,#0099ff,#00e5c5)" title="オーシャン"></div>
-      <div class="color-chip"        data-theme="sunset" style="background:linear-gradient(135deg,#ff4e00,#ffcc00)" title="サンセット"></div>
-      <div class="color-chip"        data-theme="night"  style="background:linear-gradient(135deg,#7b2fff,#ff6bff)" title="ナイト"></div>
-      <div class="color-chip"        data-theme="forest" style="background:linear-gradient(135deg,#00c853,#aaff00)" title="フォレスト"></div>
-      <div class="color-chip"        data-theme="dark"   style="background:linear-gradient(135deg,#1a1a1a,#3a3a3a);border:1px solid #555;" title="ダーク"></div>
-      <div class="color-chip"        data-theme="navy"   style="background:linear-gradient(135deg,#f0f4ff,#ffffff);border:1px solid #ccd;" title="ネイビー＆ホワイト"></div>
+      <div class="color-chip"        data-theme="blue"   style="background:linear-gradient(135deg,#0D3F7A,#2BA8D8)" title="ブルー"></div>
+      <div class="color-chip"        data-theme="night"  style="background:linear-gradient(135deg,#6B21CE,#9B40E8)" title="ナイト"></div>
+      <div class="color-chip"        data-theme="forest" style="background:linear-gradient(135deg,#4CAF30,#1B5E20)" title="グリーン"></div>
+      <div class="color-chip"        data-theme="sunset" style="background:linear-gradient(135deg,#ff4e00,#ffcc00)" title="オレンジ"></div>
+      <div class="color-chip"        data-theme="dark"   style="background:linear-gradient(135deg,#1a1a1a,#3a3a3a);border:1px solid #555;" title="黒"></div>
+      <div class="color-chip"        data-theme="navy"   style="background:linear-gradient(135deg,#f0f4ff,#ffffff);border:1px solid #ccd;" title="白"></div>
+      <div class="color-chip"        data-theme="custom" id="chip-custom"
+        style="background:linear-gradient(135deg,#ff6b9d,#ffd93d);border:2px dashed #ff6b9d;" title="カスタム">
+        <span style="font-size:14px;line-height:32px;display:block;text-align:center;">✏️</span>
+      </div>
+    </div>
+    <!-- カスタムグラデーション設定（custom選択時のみ表示） -->
+    <div id="custom-grad-area" style="display:none;margin-top:12px;background:#f8f9fc;border-radius:10px;padding:12px;border:1px solid rgba(0,0,0,0.08);">
+      <div style="font-size:11px;font-weight:700;color:#ff6b9d;margin-bottom:10px;letter-spacing:0.05em;">🎨 カスタムグラデーション</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:11px;color:#888;margin-bottom:4px;">カラーA</div>
+          <input type="color" id="grad-color-a" value="#ff6b9d"
+            style="width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;padding:3px;"
+            oninput="updateCustomGrad()" />
+        </div>
+        <div id="custom-grad-preview"
+          style="flex:2;height:48px;border-radius:10px;background:linear-gradient(135deg,#ff6b9d,#ffd93d);box-shadow:0 2px 8px rgba(0,0,0,0.12);transition:background 0.3s;">
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:11px;color:#888;margin-bottom:4px;">カラーB</div>
+          <input type="color" id="grad-color-b" value="#ffd93d"
+            style="width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;padding:3px;"
+            oninput="updateCustomGrad()" />
+        </div>
+      </div>
+    </div>
+    <!-- 単色背景 -->
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+      <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#555;">
+        <input type="checkbox" id="chk-solid" onchange="toggleSolid()"
+          style="width:16px;height:16px;accent-color:#ff6b9d;cursor:pointer;" />
+        単色背景にする
+      </label>
+      <input type="color" id="inp-solid-color" value="#ff6b9d"
+        style="width:36px;height:36px;border:none;border-radius:50%;cursor:pointer;padding:2px;display:none;"
+        oninput="updateSolidPreview()" />
+      <div id="solid-preview" style="display:none;flex:1;height:28px;border-radius:8px;background:#ff6b9d;transition:background 0.2s;"></div>
     </div>
     <label style="margin-top:16px">テキストレイアウト</label>
     <select id="inp-layout">
       <option value="left">左寄せ（標準）</option>
       <option value="center">中央揃え</option>
     </select>
+    <label style="margin-top:16px">テキストカラー</label>
+    <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+      <div id="txt-color-white" onclick="selectTextColor('white')"
+        style="width:36px;height:36px;border-radius:50%;background:#ffffff;border:2px solid #ff6b9d;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:all 0.2s;" title="白"></div>
+      <div id="txt-color-black" onclick="selectTextColor('black')"
+        style="width:36px;height:36px;border-radius:50%;background:#1a1a2e;border:2px solid transparent;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:all 0.2s;" title="黒"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
+        <input type="color" id="txt-color-custom" value="#ffffff"
+          style="width:36px;height:36px;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:2px;background:none;overflow:hidden;"
+          oninput="selectTextColor('custom')" title="カスタム" />
+        <span style="font-size:11px;color:#aaa;">カスタム</span>
+      </div>
+    </div>
+    <label style="margin-top:16px">タグ　<span style="font-size:11px;color:#aaa;font-weight:400;">空欄で非表示</span></label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;margin-bottom:8px;" id="badge-presets">
+      <div class="badge-preset active" onclick="selectBadge(this,'EVENT')">EVENT</div>
+      <div class="badge-preset" onclick="selectBadge(this,'勉強会')">勉強会</div>
+      <div class="badge-preset" onclick="selectBadge(this,'社内限定')">社内限定</div>
+      <div class="badge-preset" onclick="selectBadge(this,'NEW')">NEW</div>
+      <div class="badge-preset" onclick="selectBadge(this,'募集中')">募集中</div>
+      <div class="badge-preset" onclick="selectBadge(this,'スローガン')">スローガン</div>
+      <div class="badge-preset" onclick="selectBadge(this,'')">なし</div>
+    </div>
+    <input type="text" id="inp-badge" placeholder="自由入力も可" value="EVENT"
+      oninput="clearBadgePreset()" />
     <button class="generate-btn" onclick="generatePoster()">✨ ポスターを生成する</button>
   </div>
 
   <div class="right-panel">
-    <div class="preview-label">プレビュー（1200 × 630px）</div>
+    <div class="preview-label" id="preview-label">プレビュー（1200 × 630px）</div>
     <div class="poster-wrapper" id="poster-wrapper">
       <div id="poster-canvas">
         <div class="placeholder-msg" id="placeholder">
@@ -233,29 +310,130 @@ var currentFont = FONTS[0];
   });
 })();
 
+var SIZES = [
+  { id:'16x9',   label:'16:9',   sub:'横長・標準',   w:1200, h:630  },
+  { id:'4x3',    label:'4:3',    sub:'1200×900',     w:1200, h:900  },
+  { id:'portal', label:'サムネ', sub:'1440×816',     w:1440, h:816  },
+  { id:'a4l',    label:'A4横',   sub:'1754×1240',    w:1754, h:1240 },
+  { id:'a4p',    label:'A4縦',   sub:'1240×1754',    w:1240, h:1754 },
+  { id:'1x1',    label:'1:1',    sub:'正方形',        w:1080, h:1080 },
+];
+var currentSize = SIZES[0];
+
+// サイズピッカー生成（scaleCanvas定義後に実行）
+function initSizePicker() {
+  var picker = document.getElementById('size-picker');
+  if (!picker) return;
+  SIZES.forEach(function(sz, i) {
+    var btn = document.createElement('div');
+    btn.dataset.id = sz.id;
+    btn.style.cssText = 'padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid rgba(0,0,0,0.10);background:#f8f9fc;transition:all 0.2s;text-align:center;';
+    btn.innerHTML = '<div style="font-size:13px;font-weight:700;color:#1a1a2e;">' + sz.label + '</div>'
+                  + '<div style="font-size:10px;color:#aaa;margin-top:2px;">' + sz.sub + '</div>';
+    if (i === 0) { btn.style.borderColor = '#ff6b9d'; btn.style.background = 'rgba(255,107,157,0.08)'; }
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#size-picker > div').forEach(function(b){
+        b.style.borderColor = 'rgba(0,0,0,0.10)'; b.style.background = '#f8f9fc';
+      });
+      btn.style.borderColor = '#ff6b9d'; btn.style.background = 'rgba(255,107,157,0.08)';
+      currentSize = sz;
+      // 縦長サイズ選択時は画像レイアウトを「下に配置」に自動切替
+      if (sz.h > sz.w) {
+        document.querySelectorAll('.img-layout-btn').forEach(function(b){ b.classList.remove('active'); });
+        var bottomBtn = document.querySelector('.img-layout-btn[data-layout="bottom"]');
+        if (bottomBtn) bottomBtn.classList.add('active');
+        currentImgLayout = 'bottom';
+      } else {
+        // 横長に戻したら「右に配置」に戻す
+        document.querySelectorAll('.img-layout-btn').forEach(function(b){ b.classList.remove('active'); });
+        var rightBtn = document.querySelector('.img-layout-btn[data-layout="right"]');
+        if (rightBtn) rightBtn.classList.add('active');
+        currentImgLayout = 'right';
+      }
+      scaleCanvas();
+    });
+    picker.appendChild(btn);
+  });
+}
+
 var THEMES = {
   pop:    { accent:'#ffd93d', dark:'#0f0f1a' },
   ocean:  { accent:'#00e5c5', dark:'#001a33' },
   sunset: { accent:'#ffcc00', dark:'#1a0a00' },
-  night:  { accent:'#ff6bff', dark:'#0d001a' },
-  forest: { accent:'#aaff00', dark:'#001a0a' },
+  night:  { accent:'#FF6B00', dark:'#1a0010' },
+  forest: { accent:'#4CAF30', dark:'#0a1f08' },
+  blue:   { accent:'#2BA8D8', dark:'#001233' },
   dark:   { accent:'#e0e0e0', dark:'#111111' },
-  navy:   { accent:'#1a1a2e', dark:'#1a1a2e' }
+  navy:   { accent:'#1a1a2e', dark:'#1a1a2e' },
+  custom: { accent:'#ffd93d', dark:'#0f0f1a' }
 };
 var GRADIENTS = {
   pop:    ['#ff6b9d','#ffd93d','#6bcbff'],
   ocean:  ['#0099ff','#00c8e5','#00e5c5'],
   sunset: ['#ff4e00','#ff9900','#ffcc00'],
-  night:  ['#7b2fff','#cc44ff','#ff6bff'],
-  forest: ['#00c853','#66dd00','#aaff00'],
+  night:  ['#6B21CE','#9B40E8','#FF6B00'],
+  forest: ['#4CAF30','#4CAF30','#1B5E20'],
+  blue:   ['#0D3F7A','#1B6BC0','#2BA8D8'],
   dark:   ['#1a1a1a','#2d2d2d','#111111'],
-  navy:   ['#f8f9ff','#e8edf8','#ffffff']
+  navy:   ['#f8f9ff','#e8edf8','#ffffff'],
+  custom: ['#ff6b9d','#ffd93d','#ff6b9d']
 };
 
 var currentTheme = 'pop';
 var currentPosterData = null;
 var uploadedImageDataURL = null;
 var currentImgLayout = 'right';
+var currentTextColor = 'white'; // white / black / custom
+
+/* ===== BADGE PRESET ===== */
+function selectBadge(el, val) {
+  document.querySelectorAll('.badge-preset').forEach(function(b){ b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('inp-badge').value = val;
+}
+function clearBadgePreset() {
+  document.querySelectorAll('.badge-preset').forEach(function(b){ b.classList.remove('active'); });
+}
+
+/* ===== SOLID BACKGROUND ===== */
+var useSolid = false;
+function toggleSolid() {
+  useSolid = document.getElementById('chk-solid').checked;
+  document.getElementById('inp-solid-color').style.display = useSolid ? 'block' : 'none';
+  document.getElementById('solid-preview').style.display = useSolid ? 'block' : 'none';
+  // グラデ関連をグレーアウト
+  var opacity = useSolid ? '0.35' : '1';
+  var pointer = useSolid ? 'none' : 'auto';
+  document.getElementById('color-picker').style.opacity = opacity;
+  document.getElementById('color-picker').style.pointerEvents = pointer;
+  document.getElementById('custom-grad-area').style.opacity = opacity;
+  document.getElementById('custom-grad-area').style.pointerEvents = pointer;
+}
+function updateSolidPreview() {
+  var c = document.getElementById('inp-solid-color').value;
+  document.getElementById('solid-preview').style.background = c;
+}
+
+function updateCustomGrad() {
+  var a = document.getElementById('grad-color-a').value;
+  var b = document.getElementById('grad-color-b').value;
+  // GRADIENTSとTHEMES更新
+  GRADIENTS.custom = [a, b, b];
+  THEMES.custom.accent = b;
+  // チップとプレビューを更新
+  var chip = document.getElementById('chip-custom');
+  chip.style.background = 'linear-gradient(135deg,' + a + ',' + b + ')';
+  document.getElementById('custom-grad-preview').style.background = 'linear-gradient(135deg,' + a + ',' + b + ')';
+  // CSS変数を更新（theme-customクラス用）
+  document.documentElement.style.setProperty('--grad-a', a);
+  document.documentElement.style.setProperty('--grad-b', b);
+}
+
+function selectTextColor(type) {
+  currentTextColor = type;
+  document.getElementById('txt-color-white').style.borderColor = type === 'white' ? '#ff6b9d' : 'transparent';
+  document.getElementById('txt-color-black').style.borderColor = type === 'black' ? '#ff6b9d' : 'transparent';
+}
 
 /* ===== IMAGE UPLOAD ===== */
 var uploadArea = document.getElementById('upload-area');
@@ -296,6 +474,26 @@ function clearImage() {
   document.getElementById('img-clear-btn').classList.remove('visible');
 }
 
+/* ===== DATE PICKER SYNC ===== */
+var WEEKDAYS = ['日','月','火','水','木','金','土'];
+function syncDateToText() {
+  var datePicker = document.getElementById('inp-date-picker');
+  var timePicker = document.getElementById('inp-time-picker');
+  var dateText   = document.getElementById('inp-date');
+  if (!datePicker.value) return;
+  var d = new Date(datePicker.value + 'T00:00:00');
+  var y = d.getFullYear(), mo = d.getMonth()+1, day = d.getDate();
+  var wd = WEEKDAYS[d.getDay()];
+  var str = y + '年' + mo + '月' + day + '日（' + wd + '）';
+  if (timePicker.value) str += ' ' + timePicker.value + '〜';
+  dateText.value = str;
+}
+function clearDatePickers() {
+  // 手動編集したらピッカーをリセット
+  document.getElementById('inp-date-picker').value = '';
+  document.getElementById('inp-time-picker').value = '';
+}
+
 function updatePosLabel(v) {
   var labels = {0:'上寄せ', 25:'やや上', 50:'中央', 75:'やや下', 100:'下寄せ'};
   var closest = Object.keys(labels).reduce(function(a,b){ return Math.abs(b-v)<Math.abs(a-v)?b:a; });
@@ -315,24 +513,36 @@ document.getElementById('color-picker').addEventListener('click', function(e) {
   document.querySelectorAll('.color-chip').forEach(function(c){ c.classList.remove('active'); });
   chip.classList.add('active');
   currentTheme = chip.dataset.theme;
+  // カスタムエリアの表示切替
+  document.getElementById('custom-grad-area').style.display = currentTheme === 'custom' ? 'block' : 'none';
+  if (currentTheme === 'custom') updateCustomGrad();
 });
 
 /* ===== SCALE ===== */
 function scaleCanvas() {
   var wrapper = document.getElementById('poster-wrapper');
   var canvas  = document.getElementById('poster-canvas');
-  var scale = wrapper.clientWidth / 1200;
+  var W = currentSize.w, H = currentSize.h;
+  // 縦長サイズはwrapperを狭くして縦長に見せる
+  var maxW = H > W ? Math.round(400 * W / H) : 840;
+  wrapper.style.maxWidth = maxW + 'px';
+  var scale = wrapper.clientWidth / W;
+  canvas.style.transformOrigin = 'top left';
   canvas.style.transform = 'scale(' + scale + ')';
-  canvas.style.width  = '1200px';
-  canvas.style.height = '630px';
-  wrapper.style.height = (630 * scale) + 'px';
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  wrapper.style.height = (H * scale) + 'px';
+  wrapper.style.overflow = 'hidden';
+  document.getElementById('preview-label').textContent = 'プレビュー（' + W + ' × ' + H + 'px）';
 }
 window.addEventListener('resize', scaleCanvas);
+initSizePicker();
 
 /* ===== GENERATE ===== */
 function generatePoster() {
   var title     = document.getElementById('inp-title').value.trim();
   if (!title) { alert('イベント名を入力してください'); return; }
+  var badge     = document.getElementById('inp-badge').value.trim();
   var subtitle  = document.getElementById('inp-subtitle').value.trim();
   var date      = document.getElementById('inp-date').value.trim();
   var place     = document.getElementById('inp-place').value.trim();
@@ -341,63 +551,76 @@ function generatePoster() {
   var layout    = document.getElementById('inp-layout').value;
   var theme     = THEMES[currentTheme];
   var grads     = GRADIENTS[currentTheme];
-  var titleSize = title.length > 10 ? 54 : 68;
+  var W = currentSize.w, H = currentSize.h;
+  var isPortrait = H > W; // 縦長判定
+  // タイトルサイズをキャンバスサイズに応じてスケール
+  var baseSize = Math.round(Math.min(W, H) * (title.length > 10 ? 0.072 : 0.09));
+  var titleSize = Math.min(Math.max(baseSize, 36), 96);
   var hasImage  = !!uploadedImageDataURL;
+  // 縦長の場合は画像を下に配置、横長は右に
+  var imgLayoutDefault = isPortrait ? 'bg' : 'right';
   var imgLayout = hasImage ? currentImgLayout : 'none';
   var imgSize   = hasImage ? parseInt(document.getElementById('img-size').value) : 100;
   var imgPos    = hasImage ? parseInt(document.getElementById('img-pos').value) : 50;
-  // ダーク系は白テキスト、ネイビー白系は紺テキスト
-  var textColor = currentTheme === 'dark' ? '#ffffff' : currentTheme === 'navy' ? '#1a1a2e' : theme.dark;
-  var accentColor = currentTheme === 'dark' ? '#ffd93d' : currentTheme === 'navy' ? '#ffffff' : theme.accent;
+  // ダーク系・青系は白テキスト、ネイビー白系は紺テキスト
+  var textColor = (currentTheme === 'dark' || currentTheme === 'blue') ? '#ffffff' : currentTheme === 'navy' ? '#1a1a2e' : theme.dark;
+  var accentColor = currentTheme === 'dark' ? '#ffd93d' : currentTheme === 'navy' ? '#1a1a2e' : currentTheme === 'blue' ? '#2BA8D8' : theme.accent;
+  // テキストカラー上書き
+  if (currentTextColor === 'white') textColor = '#ffffff';
+  else if (currentTextColor === 'black') textColor = '#1a1a2e';
+  else if (currentTextColor === 'custom') textColor = document.getElementById('txt-color-custom').value;
 
   // Text column width depends on image layout
   var textColWidth = (hasImage && imgLayout === 'right') ? '55%' : '100%';
+  var textColHeight = (hasImage && imgLayout === 'bottom') ? '50%' : '100%';
   var contentAlign = layout === 'center' ? 'align-items:center;text-align:center;' : '';
 
   var metaHTML = '';
   if (date)  metaHTML += '<div class="meta-pill"><div class="meta-label">DATE</div><div class="meta-val" style="color:' + textColor + ';">' + date  + '</div></div>';
   if (place) metaHTML += '<div class="meta-pill"><div class="meta-label">PLACE</div><div class="meta-val" style="color:' + textColor + ';">' + place + '</div></div>';
 
-  // スローガン：右に画像がある場合はテキストエリア内の下部に横書き、それ以外は右端縦書き
+  // スローガン
   var sloganHTML = '';
   if (slogan) {
-    if (hasImage && imgLayout === 'right') {
-      // テキストカラム内の下部に横書きで配置（画像と被らない）
-      sloganHTML = ''; // テキストカラム内でsubHTMLの後に挿入するので後で処理
+    if (hasImage && (imgLayout === 'right' || imgLayout === 'bottom')) {
+      sloganHTML = '';
     } else {
-      // 右端縦書き（従来通り）
       sloganHTML = '<div style="position:absolute;right:52px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:13px;font-weight:700;letter-spacing:0.22em;color:rgba(128,128,128,0.4);white-space:nowrap;">' + slogan + '</div>';
     }
   }
-  var sloganInlineHTML = (slogan && hasImage && imgLayout === 'right')
+  var sloganInlineHTML = (slogan && hasImage && (imgLayout === 'right' || imgLayout === 'bottom'))
     ? '<div class="anim-meta" style="margin-top:16px;font-size:12px;font-weight:700;letter-spacing:0.2em;color:' + textColor + ';opacity:0.4;text-transform:uppercase;">' + slogan + '</div>'
     : '';
-  var orgHTML    = organizer ? '<div style="position:absolute;top:28px;right:' + (hasImage && imgLayout==='right' ? '660' : '80') + 'px;font-size:12px;font-weight:700;color:' + textColor + ';opacity:0.45;letter-spacing:0.08em;">' + organizer + '</div>' : '';
+  var orgHTML    = organizer ? '<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:' + textColor + ';opacity:0.45;letter-spacing:0.08em;">' + organizer + '</div>' : '';
   var subHTML    = subtitle ? '<div class="anim-subtitle" style="font-size:20px;font-weight:700;color:' + textColor + ';opacity:0.72;margin-bottom:28px;">' + subtitle + '</div>' : '';
 
-  var bgStyle = 'background:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ');';
+  var solidColor = useSolid ? document.getElementById('inp-solid-color').value : null;
+  var bgStyle = solidColor
+    ? 'background:' + solidColor + ';'
+    : 'background:linear-gradient(135deg,' + grads[0] + ',' + grads[1] + ',' + grads[2] + ');';
 
   // Image HTML
   var imageHTML = '';
   if (hasImage) {
-    var objPosY = imgPos + '%';
-    // imgSize=100: 全面cover / それ以下: containで縮小表示（見切れなし）
-    var imgFit   = imgSize >= 100 ? 'cover' : 'contain';
-    var imgW     = imgSize >= 100 ? '100%' : imgSize + '%';
-    var imgH     = imgSize >= 100 ? '100%' : imgSize + '%';
-    // containの場合はflexで位置調整
     var innerStyle = imgSize >= 100
-      ? 'width:100%;height:100%;object-fit:cover;object-position:center ' + objPosY + ';'
+      ? 'width:100%;height:100%;object-fit:cover;object-position:center center;'
       : 'max-width:' + imgSize + '%;max-height:' + imgSize + '%;object-fit:contain;object-position:center center;';
     var wrapAlign  = imgPos < 30 ? 'flex-start' : imgPos > 70 ? 'flex-end' : 'center';
+    var flexWrapBg = 'display:flex;align-items:' + wrapAlign + ';justify-content:center;';
     var flexWrap   = imgSize >= 100 ? '' : 'display:flex;align-items:' + wrapAlign + ';justify-content:center;';
     if (imgLayout === 'right') {
       imageHTML = '<div style="position:absolute;right:0;top:0;width:48%;height:100%;overflow:hidden;' + flexWrap + '">'
         + '<img src="' + uploadedImageDataURL + '" style="' + innerStyle + '" />'
         + '<div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,0.18),transparent 40%);"></div>'
         + '</div>';
+    } else if (imgLayout === 'bottom') {
+      // 下半分に画像、上半分はグラデ背景＋テキスト
+      imageHTML = '<div style="position:absolute;left:0;bottom:0;width:100%;height:50%;overflow:hidden;' + flexWrap + '">'
+        + '<img src="' + uploadedImageDataURL + '" style="' + innerStyle + '" />'
+        + '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.15),transparent 40%);"></div>'
+        + '</div>';
     } else if (imgLayout === 'bg') {
-      imageHTML = '<div style="position:absolute;inset:0;overflow:hidden;' + flexWrap + '">'
+      imageHTML = '<div style="position:absolute;inset:0;overflow:hidden;' + flexWrapBg + '">'
         + '<img src="' + uploadedImageDataURL + '" style="' + innerStyle + '" />'
         + '<div style="position:absolute;inset:0;background:linear-gradient(135deg,' + grads[0] + 'cc,' + grads[2] + '99);"></div>'
         + '</div>';
@@ -405,25 +628,32 @@ function generatePoster() {
     }
   }
 
-  var fontCSS = currentFont.css;
+  // 縦長・下配置は上下センター、左右はlayout設定に従う
+  var padV = Math.round(H * 0.095);
+  var padH = Math.round(W * 0.067);
+  var isVerticalLayout = isPortrait || (hasImage && imgLayout === 'bottom');
+  var justifyContent = 'center';
+  var contentAlign = layout === 'center' ? 'align-items:center;text-align:center;' : '';
 
+  var fontCSS = currentFont.css;
+  var circleR1 = Math.round(Math.min(W,H)*0.55), circleR2 = Math.round(Math.min(W,H)*0.33), circleR3 = Math.round(Math.min(W,H)*0.1);
   var html = ''
     + '<style>'
     + '.meta-pill{background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;margin-bottom:8px;}'
     + '.meta-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;}'
     + '.meta-val{font-size:15px;font-weight:900;font-family:' + fontCSS + ';}'
     + '</style>'
-    + '<div class="' + (imgLayout === 'bg' ? '' : 'anim-bg theme-' + currentTheme) + '" style="width:1200px;height:630px;position:relative;overflow:hidden;font-family:' + fontCSS + ';' + (imgLayout === 'bg' ? '' : bgStyle) + '">'
+    + '<div class="' + (imgLayout === 'bg' ? '' : 'anim-bg theme-' + currentTheme) + '" style="width:' + W + 'px;height:' + H + 'px;position:relative;overflow:hidden;font-family:' + fontCSS + ';' + (imgLayout === 'bg' ? '' : bgStyle) + '">'
     +   imageHTML
     +   (imgLayout !== 'bg' ? (
-          '<div class="anim-circle-a" style="position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,0.18);top:-100px;right:-60px;"></div>'
-        + '<div class="anim-circle-b" style="position:absolute;width:250px;height:250px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-80px;right:120px;"></div>'
-        + '<div class="anim-circle-c" style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.30);top:60px;right:280px;"></div>'
+          '<div class="anim-circle-a" style="position:absolute;width:' + circleR1 + 'px;height:' + circleR1 + 'px;border-radius:50%;background:rgba(255,255,255,0.18);top:-' + Math.round(circleR1*0.25) + 'px;right:-' + Math.round(circleR1*0.14) + 'px;"></div>'
+        + '<div class="anim-circle-b" style="position:absolute;width:' + circleR2 + 'px;height:' + circleR2 + 'px;border-radius:50%;background:rgba(0,0,0,0.10);bottom:-' + Math.round(circleR2*0.32) + 'px;right:' + Math.round(W*0.1) + 'px;"></div>'
+        + '<div class="anim-circle-c" style="position:absolute;width:' + circleR3*2 + 'px;height:' + circleR3*2 + 'px;border-radius:50%;background:rgba(255,255,255,0.30);top:' + Math.round(H*0.1) + 'px;right:' + Math.round(W*0.23) + 'px;"></div>'
       ) : '')
     +   sloganHTML
     +   orgHTML
-    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;z-index:10;width:' + textColWidth + ';' + contentAlign + '">'
-    +     '<div class="anim-badge" style="display:inline-block;background:' + textColor + ';color:' + accentColor + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">EVENT</div>'
+    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:' + justifyContent + ';padding:' + padV + 'px ' + padH + 'px;z-index:10;width:' + textColWidth + ';height:' + textColHeight + ';' + contentAlign + '">'
+    +     (badge ? '<div class="anim-badge" style="display:inline-block;background:' + textColor + ';color:' + accentColor + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">' + badge + '</div>' : '')
     +     '<div class="anim-title" style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + textColor + ';text-shadow:3px 3px 0 rgba(128,128,128,0.15);margin-bottom:14px;white-space:pre-wrap;">' + title + '</div>'
     +     subHTML
     +     '<div class="anim-meta" style="display:flex;flex-wrap:wrap;">' + metaHTML + '</div>'
@@ -436,7 +666,7 @@ function generatePoster() {
   if (ph) ph.remove();
   canvas.innerHTML = html;
 
-  currentPosterData = { title:title, subtitle:subtitle, date:date, place:place, slogan:slogan, organizer:organizer, layout:layout, theme:currentTheme, imgDataURL:uploadedImageDataURL, imgLayout:imgLayout, imgSize:imgSize, imgPos:imgPos, fontCSS:currentFont.css, fontGoogle:currentFont.google };
+  currentPosterData = { title:title, badge:badge, subtitle:subtitle, date:date, place:place, slogan:slogan, organizer:organizer, layout:layout, theme:currentTheme, imgDataURL:uploadedImageDataURL, imgLayout:imgLayout, imgSize:imgSize, imgPos:imgPos, fontCSS:currentFont.css, fontGoogle:currentFont.google, size:currentSize, textColor:textColor, solidColor:solidColor };
   scaleCanvas();
   document.getElementById('dl-btn').disabled = false;
   document.getElementById('dl-video-btn').disabled = false;
@@ -451,18 +681,21 @@ async function downloadPoster() {
     var d = currentPosterData;
     var theme = THEMES[d.theme];
     var grads = GRADIENTS[d.theme];
-    var titleSize = d.title.length > 10 ? 54 : 68;
+    var sz = d.size || SIZES[0];
+    var W = sz.w, H = sz.h;
+    var baseSize = Math.round(Math.min(W,H) * (d.title.length > 10 ? 0.072 : 0.09));
+    var titleSize = Math.min(Math.max(baseSize, 36), 96);
     var hasImage = !!d.imgDataURL;
     var imgLayout = d.imgLayout || 'none';
     var imgSize = d.imgSize !== undefined ? d.imgSize : 100;
     var imgPos  = d.imgPos  !== undefined ? d.imgPos  : 50;
-    var darkColor = (hasImage && imgLayout === 'bg') ? '#ffffff'
-                  : d.theme === 'dark'  ? '#ffffff'
+    var darkColor = d.textColor ? d.textColor
+                  : (hasImage && imgLayout === 'bg') ? '#ffffff'
+                  : (d.theme === 'dark' || d.theme === 'blue') ? '#ffffff'
                   : d.theme === 'navy'  ? '#1a1a2e'
                   : theme.dark;
-    var accentColor = d.theme === 'dark' ? '#ffd93d' : d.theme === 'navy' ? '#1a1a2e' : theme.accent;
+    var accentColor = d.theme === 'dark' ? '#ffd93d' : d.theme === 'navy' ? '#1a1a2e' : d.theme === 'blue' ? '#2BA8D8' : theme.accent;
 
-    var W = 1200, H = 630;
     var canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     var ctx = canvas.getContext('2d');
@@ -482,6 +715,9 @@ async function downloadPoster() {
       var ov = ctx.createLinearGradient(0,0,W,H);
       ov.addColorStop(0, grads[0]+'cc'); ov.addColorStop(1, grads[2]+'99');
       ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+    } else if (d.solidColor) {
+      // 単色背景
+      ctx.fillStyle = d.solidColor; ctx.fillRect(0,0,W,H);
     } else {
       // グラデーション背景
       var p = 0.5;
@@ -492,71 +728,95 @@ async function downloadPoster() {
       // デコ円
       ctx.save();
       ctx.globalAlpha=0.18; ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(1150, 110, 280, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*0.958, H*0.175, Math.min(W,H)*0.37, 0, Math.PI*2); ctx.fill();
       ctx.globalAlpha=0.10; ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.arc(1080, 545, 200, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*0.9, H*0.865, Math.min(W,H)*0.26, 0, Math.PI*2); ctx.fill();
       ctx.globalAlpha=0.30; ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(960, 100, 60, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*0.8, H*0.159, Math.min(W,H)*0.08, 0, Math.PI*2); ctx.fill();
       ctx.restore();
 
       // 右側画像パネル
       if (hasImage && imgLayout === 'right') {
-        ctx.save(); ctx.beginPath(); ctx.rect(576,0,624,H); ctx.clip();
-        drawImageCover(ctx, imgEl, 576, 0, 624, H, imgSize, imgPos);
-        var fade = ctx.createLinearGradient(576,0,820,0);
+        var imgPanelX = Math.round(W * 0.48);
+        ctx.save(); ctx.beginPath(); ctx.rect(imgPanelX,0,W-imgPanelX,H); ctx.clip();
+        drawImageCover(ctx, imgEl, imgPanelX, 0, W-imgPanelX, H, imgSize, imgPos);
+        var fade = ctx.createLinearGradient(imgPanelX,0,imgPanelX+Math.round(W*0.2),0);
         fade.addColorStop(0,'rgba(0,0,0,0.18)'); fade.addColorStop(1,'transparent');
-        ctx.fillStyle=fade; ctx.fillRect(576,0,624,H);
+        ctx.fillStyle=fade; ctx.fillRect(imgPanelX,0,W-imgPanelX,H);
+        ctx.restore();
+      }
+      // 下側画像パネル
+      if (hasImage && imgLayout === 'bottom') {
+        var imgPanelY = Math.round(H * 0.5);
+        ctx.save(); ctx.beginPath(); ctx.rect(0,imgPanelY,W,H-imgPanelY); ctx.clip();
+        drawImageCover(ctx, imgEl, 0, imgPanelY, W, H-imgPanelY, imgSize, imgPos);
+        var fadeB = ctx.createLinearGradient(0,imgPanelY,0,imgPanelY+Math.round(H*0.12));
+        fadeB.addColorStop(0,'rgba(0,0,0,0.15)'); fadeB.addColorStop(1,'transparent');
+        ctx.fillStyle=fadeB; ctx.fillRect(0,imgPanelY,W,H-imgPanelY);
         ctx.restore();
       }
     }
 
     // --- テキスト共通設定 ---
     var textAlign = d.layout === 'center' ? 'center' : 'left';
-    var textX = d.layout === 'center' ? (hasImage && imgLayout==='right' ? 330 : 600) : 80;
-    var textColW = (hasImage && imgLayout==='right') ? 576 : W;
+    var isPortrait = H > W;
+    var isBottom = (hasImage && imgLayout === 'bottom');
+    var isVerticalLayout = isPortrait || isBottom;
+    var pad = Math.round(W * 0.067);
+    var textAlignPNG = d.layout === 'center' ? 'center' : 'left';
+    var textX = textAlignPNG === 'center'
+      ? (hasImage && imgLayout==='right' ? W*0.27 : W*0.5)
+      : pad;
+    var textColW = (hasImage && imgLayout==='right') ? W*0.52 : W;
+    var badgeY = isVerticalLayout ? Math.round(H * 0.27) : Math.round(H * 0.27);
+    var titleY = isVerticalLayout ? Math.round(H * 0.38) + titleSize * 0.75 : Math.round(H * 0.38) + titleSize * 0.75;
+    var pillarX = Math.round(W * 0.963);
 
     // 主催
     if (d.organizer) {
       ctx.textAlign='right'; ctx.font='700 12px sans-serif';
       ctx.fillStyle='rgba(0,0,0,0.40)';
-      ctx.fillText(d.organizer, 1120, 48);
+      ctx.fillText(d.organizer, W-80, 48);
     }
     // スローガン（縦書き風、右端）
     if (d.slogan && !(hasImage && imgLayout==='right')) {
-      ctx.save(); ctx.translate(1156,315); ctx.rotate(Math.PI/2);
+      ctx.save(); ctx.translate(pillarX, H*0.5); ctx.rotate(Math.PI/2);
       ctx.font='700 12px sans-serif'; ctx.fillStyle='rgba(128,128,128,0.4)'; ctx.textAlign='center';
       ctx.fillText(d.slogan.toUpperCase(),0,0); ctx.restore();
     }
 
-    // EVENTバッジ
-    ctx.fillStyle = darkColor;
-    rrect(ctx, textX-(textAlign==='center'?40:0), 170, 80, 28, 14); ctx.fill();
-    ctx.fillStyle = accentColor; ctx.font='700 12px sans-serif'; ctx.textAlign='left';
-    ctx.fillText('EVENT', textX-(textAlign==='center'?40:0)+16, 189);
+    // EVENTバッジ（空欄なら非表示）
+    if (d.badge) {
+      var bx = textAlignPNG === 'center' ? W*0.5 - 40 : textX - (textAlignPNG==='center'?40:0);
+      ctx.fillStyle = darkColor;
+      rrect(ctx, bx, badgeY, ctx.measureText(d.badge) && (function(){ ctx.font='700 12px sans-serif'; return ctx.measureText(d.badge).width; })() + 32, 28, 14); ctx.fill();
+      ctx.fillStyle = accentColor; ctx.font='700 12px sans-serif'; ctx.textAlign='left';
+      ctx.fillText(d.badge, bx+16, badgeY+18);
+    }
 
-    // タイトル（\n で手動改行 + 長い行は自動折り返し）
-    ctx.fillStyle = darkColor; ctx.textAlign = textAlign;
+    // タイトル（\n で手動改行 + 自動折り返し）
+    ctx.fillStyle = darkColor; ctx.textAlign = textAlignPNG;
     ctx.font = '900 '+titleSize+'px sans-serif';
-    var maxW = (hasImage && imgLayout==='right') ? 490 : 1040;
+    var maxTW = (hasImage && imgLayout==='right') ? W*0.42 : W*0.87;
     var manualLines = d.title.split('\n');
     var lines = [];
-    manualLines.forEach(function(ml) { wrapText(ctx, ml, maxW).forEach(function(l){ lines.push(l); }); });
-    var ty = 240 + titleSize * 0.75;
+    manualLines.forEach(function(ml) { wrapText(ctx, ml, maxTW).forEach(function(l){ lines.push(l); }); });
+    var ty = titleY;
     lines.forEach(function(line) {
       ctx.fillText(line, textX, ty); ty += titleSize * 1.1;
     });
 
     // サブタイトル
     if (d.subtitle) {
-      var sy = ty + 10;
-      ctx.globalAlpha=0.72; ctx.font='700 20px sans-serif'; ctx.textAlign=textAlign;
-      ctx.fillStyle=darkColor; ctx.fillText(d.subtitle, textX, sy); ctx.globalAlpha=1;
-      ty = sy + 38;
+      ty += 10;
+      ctx.globalAlpha=0.72; ctx.font='700 '+Math.round(H*0.032)+'px sans-serif'; ctx.textAlign=textAlignPNG;
+      ctx.fillStyle=darkColor; ctx.fillText(d.subtitle, textX, ty); ctx.globalAlpha=1;
+      ty += Math.round(H*0.06);
     } else { ty += 10; }
 
     // スローガン（右に画像がある場合は左下に横書き）
     if (d.slogan && hasImage && imgLayout==='right') {
-      ctx.globalAlpha=0.4; ctx.font='700 12px sans-serif'; ctx.textAlign=textAlign;
+      ctx.globalAlpha=0.4; ctx.font='700 12px sans-serif'; ctx.textAlign=textAlignPNG;
       ctx.fillStyle=darkColor; ctx.fillText(d.slogan.toUpperCase(), textX, ty+10); ctx.globalAlpha=1;
       ty += 28;
     }
@@ -565,20 +825,17 @@ async function downloadPoster() {
     var pills = [];
     if (d.date)  pills.push({label:'DATE',  val:d.date});
     if (d.place) pills.push({label:'PLACE', val:d.place});
-    // 幅をそれぞれの実際のフォントサイズで計測
     function pillWidth(pill) {
       ctx.font='700 10px sans-serif';
       var lw = ctx.measureText(pill.label).width;
       ctx.font='900 15px sans-serif';
       var vw = ctx.measureText(pill.val).width;
-      return Math.max(lw, vw) + 40; // 左右パディング各20px
+      return Math.max(lw, vw) + 40;
     }
-    var mx = textAlign==='center' ? null : 80;
-    if (textAlign==='center') {
-      var totalW = 0;
-      pills.forEach(function(p){ totalW += pillWidth(p) + 16; });
-      mx = (textColW - totalW) / 2;
-    }
+    // センター配置の場合はピル群を中央揃え
+    var totalPillW = 0;
+    pills.forEach(function(p){ totalPillW += pillWidth(p) + 16; });
+    var mx = textAlignPNG === 'center' ? (textColW - totalPillW) / 2 : pad;
     pills.forEach(function(pill) {
       var vw = pillWidth(pill);
       ctx.fillStyle='rgba(255,255,255,0.5)'; rrect(ctx,mx,ty,vw,54,12); ctx.fill();
