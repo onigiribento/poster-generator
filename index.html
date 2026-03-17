@@ -121,8 +121,8 @@ select option { background:#fff; color:#1a1a2e; }
   <div class="left-panel">
     <div class="section-title" style="margin-top:0;">📐 サイズ</div>
     <div id="size-picker" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px;"></div>
-    <div class="section-title">📝 イベント情報</div>
-    <label>イベント名 *　<span style="font-size:11px;color:#aaa;font-weight:400;">Shift+Enterで改行</span></label>
+    <div class="section-title">📝 ポスター情報</div>
+    <label>タイトル *　<span style="font-size:11px;color:#aaa;font-weight:400;">Shift+Enterで改行</span></label>
     <textarea id="inp-title" placeholder="例: デザファク夏祭り2026" rows="2" style="resize:vertical;min-height:48px;"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();}"></textarea>
     <label>サブタイトル・キャッチ</label>
@@ -314,8 +314,8 @@ var SIZES = [
   { id:'16x9',   label:'16:9',   sub:'横長・標準',   w:1200, h:630  },
   { id:'4x3',    label:'4:3',    sub:'1200×900',     w:1200, h:900  },
   { id:'portal', label:'サムネ', sub:'1440×816',     w:1440, h:816  },
-  { id:'a4l',    label:'A4横',   sub:'1754×1240',    w:1754, h:1240 },
-  { id:'a4p',    label:'A4縦',   sub:'1240×1754',    w:1240, h:1754 },
+  { id:'a4l',    label:'A4ヨコ',  sub:'1754×1240',    w:1754, h:1240 },
+  { id:'a4p',    label:'A4タテ',  sub:'1240×1754',    w:1240, h:1754 },
   { id:'1x1',    label:'1:1',    sub:'正方形',        w:1080, h:1080 },
 ];
 var currentSize = SIZES[0];
@@ -523,15 +523,32 @@ function scaleCanvas() {
   var wrapper = document.getElementById('poster-wrapper');
   var canvas  = document.getElementById('poster-canvas');
   var W = currentSize.w, H = currentSize.h;
-  // 縦長サイズはwrapperを狭くして縦長に見せる
-  var maxW = H > W ? Math.round(400 * W / H) : 840;
-  wrapper.style.maxWidth = maxW + 'px';
-  var scale = wrapper.clientWidth / W;
+  var rightPanel = wrapper.parentElement;
+  var availW = rightPanel.clientWidth - 64;
+
+  // 表示したい最大高さを比率で決める（縦長は低め、横長は高め）
+  var ratio = W / H;
+  var maxH;
+  if (H > W) {
+    maxH = 480; // 縦長：幅を絞って縦長に見せる
+  } else if (ratio > 1.6) {
+    maxH = 480; // 横長（16:9, サムネなど）
+  } else {
+    maxH = 520; // 4:3, 1:1 など
+  }
+
+  // 幅と高さ両方から最大サイズを算出
+  var wrapW = Math.min(availW, Math.round(maxH * ratio));
+  var scale = wrapW / W;
+
+  wrapper.style.width    = wrapW + 'px';
+  wrapper.style.maxWidth = wrapW + 'px';
+  wrapper.style.margin   = '0 auto';
   canvas.style.transformOrigin = 'top left';
   canvas.style.transform = 'scale(' + scale + ')';
   canvas.style.width  = W + 'px';
   canvas.style.height = H + 'px';
-  wrapper.style.height = (H * scale) + 'px';
+  wrapper.style.height   = Math.round(H * scale) + 'px';
   wrapper.style.overflow = 'hidden';
   document.getElementById('preview-label').textContent = 'プレビュー（' + W + ' × ' + H + 'px）';
 }
@@ -541,7 +558,7 @@ initSizePicker();
 /* ===== GENERATE ===== */
 function generatePoster() {
   var title     = document.getElementById('inp-title').value.trim();
-  if (!title) { alert('イベント名を入力してください'); return; }
+  if (!title) { alert('タイトルを入力してください'); return; }
   var badge     = document.getElementById('inp-badge').value.trim();
   var subtitle  = document.getElementById('inp-subtitle').value.trim();
   var date      = document.getElementById('inp-date').value.trim();
@@ -589,7 +606,7 @@ function generatePoster() {
     }
   }
   var sloganInlineHTML = (slogan && hasImage && (imgLayout === 'right' || imgLayout === 'bottom'))
-    ? '<div class="anim-meta" style="margin-top:16px;font-size:12px;font-weight:700;letter-spacing:0.2em;color:' + textColor + ';opacity:0.4;text-transform:uppercase;">' + slogan + '</div>'
+    ? '<div class="anim-meta" style="margin-top:16px;font-size:12px;font-weight:700;letter-spacing:0.2em;color:' + textColor + ';opacity:0.4;">' + slogan + '</div>'
     : '';
   var orgHTML    = organizer ? '<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:' + textColor + ';opacity:0.45;letter-spacing:0.08em;">' + organizer + '</div>' : '';
   var subHTML    = subtitle ? '<div class="anim-subtitle" style="font-size:20px;font-weight:700;color:' + textColor + ';opacity:0.72;margin-bottom:28px;">' + subtitle + '</div>' : '';
@@ -628,8 +645,8 @@ function generatePoster() {
     }
   }
 
-  // 縦長・下配置は上下センター、左右はlayout設定に従う
-  var padV = Math.round(H * 0.095);
+  // パディングを控えめに固定、コンテンツが多くても溢れないよう
+  var padV = Math.min(Math.round(H * 0.08), 70);
   var padH = Math.round(W * 0.067);
   var isVerticalLayout = isPortrait || (hasImage && imgLayout === 'bottom');
   var justifyContent = 'center';
@@ -652,7 +669,7 @@ function generatePoster() {
       ) : '')
     +   sloganHTML
     +   orgHTML
-    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:' + justifyContent + ';padding:' + padV + 'px ' + padH + 'px;z-index:10;width:' + textColWidth + ';height:' + textColHeight + ';' + contentAlign + '">'
+    +   '<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:' + padV + 'px ' + padH + 'px;z-index:10;width:' + textColWidth + ';height:' + textColHeight + ';overflow:hidden;' + contentAlign + '">'
     +     (badge ? '<div class="anim-badge" style="display:inline-block;background:' + textColor + ';color:' + accentColor + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:999px;margin-bottom:20px;width:fit-content;letter-spacing:0.1em;">' + badge + '</div>' : '')
     +     '<div class="anim-title" style="font-size:' + titleSize + 'px;font-weight:900;line-height:1.05;color:' + textColor + ';text-shadow:3px 3px 0 rgba(128,128,128,0.15);margin-bottom:14px;white-space:pre-wrap;">' + title + '</div>'
     +     subHTML
@@ -665,6 +682,8 @@ function generatePoster() {
   var ph = document.getElementById('placeholder');
   if (ph) ph.remove();
   canvas.innerHTML = html;
+  // HTML書き換え後に再度スケール計算
+  requestAnimationFrame(function(){ scaleCanvas(); });
 
   currentPosterData = { title:title, badge:badge, subtitle:subtitle, date:date, place:place, slogan:slogan, organizer:organizer, layout:layout, theme:currentTheme, imgDataURL:uploadedImageDataURL, imgLayout:imgLayout, imgSize:imgSize, imgPos:imgPos, fontCSS:currentFont.css, fontGoogle:currentFont.google, size:currentSize, textColor:textColor, solidColor:solidColor };
   scaleCanvas();
@@ -782,7 +801,7 @@ async function downloadPoster() {
     if (d.slogan && !(hasImage && imgLayout==='right')) {
       ctx.save(); ctx.translate(pillarX, H*0.5); ctx.rotate(Math.PI/2);
       ctx.font='700 12px sans-serif'; ctx.fillStyle='rgba(128,128,128,0.4)'; ctx.textAlign='center';
-      ctx.fillText(d.slogan.toUpperCase(),0,0); ctx.restore();
+      ctx.fillText(d.slogan,0,0); ctx.restore();
     }
 
     // EVENTバッジ（空欄なら非表示）
@@ -817,7 +836,7 @@ async function downloadPoster() {
     // スローガン（右に画像がある場合は左下に横書き）
     if (d.slogan && hasImage && imgLayout==='right') {
       ctx.globalAlpha=0.4; ctx.font='700 12px sans-serif'; ctx.textAlign=textAlignPNG;
-      ctx.fillStyle=darkColor; ctx.fillText(d.slogan.toUpperCase(), textX, ty+10); ctx.globalAlpha=1;
+      ctx.fillStyle=darkColor; ctx.fillText(d.slogan, textX, ty+10); ctx.globalAlpha=1;
       ty += 28;
     }
 
@@ -913,7 +932,7 @@ function buildPosterHTML(d, processedImgURL) {
   var metaHTML = '';
   if (d.date)  metaHTML += '<div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">DATE</div><div style="font-size:15px;font-weight:900;color:' + darkColor + ';">' + d.date + '</div></div>';
   if (d.place) metaHTML += '<div style="background:rgba(255,255,255,0.55);border-radius:12px;padding:10px 18px;margin-right:16px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#555;text-transform:uppercase;margin-bottom:4px;">PLACE</div><div style="font-size:15px;font-weight:900;color:' + darkColor + ';">' + d.place + '</div></div>';
-  var sloganHTML = d.slogan ? '<div style="position:absolute;right:44px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:12px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.22);white-space:nowrap;">' + d.slogan.toUpperCase() + '</div>' : '';
+  var sloganHTML = d.slogan ? '<div style="position:absolute;right:44px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:center;font-size:12px;font-weight:700;letter-spacing:0.22em;color:rgba(0,0,0,0.22);white-space:nowrap;">' + d.slogan + '</div>' : '';
   var orgHTML    = d.organizer ? '<div style="position:absolute;top:28px;right:80px;font-size:12px;font-weight:700;color:rgba(0,0,0,0.40);letter-spacing:0.08em;">' + d.organizer + '</div>' : '';
   var subHTML    = d.subtitle ? '<div style="font-size:20px;font-weight:700;color:' + darkColor + ';opacity:0.72;margin-bottom:28px;">' + d.subtitle + '</div>' : '';
 
@@ -1140,7 +1159,7 @@ async function downloadVideo() {
       if (d.slogan) {
         ctx.save(); ctx.translate(1156,315); ctx.rotate(Math.PI/2);
         ctx.font='700 12px sans-serif'; ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.textAlign='center';
-        ctx.fillText(d.slogan.toUpperCase(), 0, 0); ctx.restore();
+        ctx.fillText(d.slogan, 0, 0); ctx.restore();
       }
 
       function fade(start, dur) { return Math.min(1, Math.max(0, (t - start) / dur)); }
